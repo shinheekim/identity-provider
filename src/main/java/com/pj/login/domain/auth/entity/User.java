@@ -2,15 +2,7 @@ package com.pj.login.domain.auth.entity;
 
 import com.pj.login.common.converter.YesNoBooleanConverter;
 import com.pj.login.common.entity.BaseTimeEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -67,19 +59,13 @@ public class User extends BaseTimeEntity {
             boolean phoneVerified,
             LocalDateTime lastLoginAt
     ) {
-        this.userUuid = userUuid;
+        this.userUuid = userUuid != null ? userUuid : UUID.randomUUID();
         this.accountStatus = accountStatus;
         this.email = email;
         this.emailVerified = emailVerified;
         this.phoneNumber = phoneNumber;
         this.phoneVerified = phoneVerified;
         this.lastLoginAt = lastLoginAt;
-    }
-
-    void assignUserUuidIfAbsent() {
-        if (userUuid == null) {
-            userUuid = UUID.randomUUID();
-        }
     }
 
     public void addIdentity(Identity identity) {
