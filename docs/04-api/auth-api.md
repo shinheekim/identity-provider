@@ -68,11 +68,12 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ### 요청 Body
 
-| 필드 | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| email | String | Y | 사용자 이메일 |
-| password | String | Y | 사용자 비밀번호 |
-| phoneNumber | String | N | 사용자 전화번호 |
+| 필드 | 타입 | 필수 | 설명         |
+|------|------|------|------------|
+| loginId | String | Y | 사용자 로그인ID  |
+| email | String | Y | 사용자 이메일    |
+| password | String | Y | 사용자 비밀번호   |
+| phoneNumber | String | N | 사용자 전화번호   |
 
 ---
 
