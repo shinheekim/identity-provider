@@ -1,8 +1,11 @@
 package com.pj.login.domain.auth.entity;
 
 import com.pj.login.common.entity.BaseTimeEntity;
+import com.pj.login.domain.auth.constant.PasswordAlgo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Getter
 @Entity
@@ -34,8 +38,9 @@ public class Password extends BaseTimeEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "password_algo", nullable = false, length = 50)
-    private String passwordAlgo;
+    private PasswordAlgo passwordAlgo;
 
     @Column(name = "password_changed_at", nullable = false)
     private LocalDateTime passwordChangedAt;
@@ -46,10 +51,23 @@ public class Password extends BaseTimeEntity {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
+    public static Password createEncoded(
+            String passwordHash,
+            PasswordAlgo passwordAlgo,
+            LocalDateTime passwordChangedAt
+    ) {
+        return Password.builder()
+                .passwordHash(Objects.requireNonNull(passwordHash))
+                .passwordAlgo(Objects.requireNonNull(passwordAlgo))
+                .passwordChangedAt(Objects.requireNonNull(passwordChangedAt))
+                .failCount(0)
+                .build();
+    }
+
     @Builder
     private Password(
             String passwordHash,
-            String passwordAlgo,
+            PasswordAlgo passwordAlgo,
             LocalDateTime passwordChangedAt,
             int failCount,
             LocalDateTime lockedUntil
