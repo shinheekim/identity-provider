@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: login
+  datasource:
+    url: jdbc:postgresql://localhost:5432/login?currentSchema=public&serverTimezone=Asia/Seoul
+    username: root
+    password: root
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6380
+      timeout: 2s
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    org.hibernate.SQL: debug
