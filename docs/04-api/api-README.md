@@ -1,7 +1,9 @@
 # API 설계 요약
 
 본 문서는 서버에서 제공할 API의 전체 구성을 요약한 설계 문서입니다.  
-상세 요청/응답 스펙은 추후 Swagger(OpenAPI)로 관리하며 별도의 문서로 제공 될 수 있습니다.
+상세 요청/응답 스펙은 Swagger(OpenAPI)로 관리합니다.
+-실행후 아래 링크 확인
+[Swagger](http://localhost:8080/swagger-ui/index.html)
 
 ## 🔐 Auth API
 - [Auth API](./auth-api.md)
