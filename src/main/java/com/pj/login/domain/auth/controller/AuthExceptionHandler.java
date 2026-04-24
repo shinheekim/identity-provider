@@ -1,6 +1,6 @@
 package com.pj.login.domain.auth.controller;
 
-import com.pj.login.common.response.ApiResponse;
+import com.pj.login.common.response.ApiResult;
 import com.pj.login.domain.auth.exception.DuplicateEmailException;
 import com.pj.login.domain.auth.exception.DuplicateLoginIdException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -15,19 +15,19 @@ public class AuthExceptionHandler {
 
     @ExceptionHandler(DuplicateEmailException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleDuplicateEmail(DuplicateEmailException ex) {
-        return ApiResponse.error("DUPLICATE_EMAIL", ex.getMessage());
+    public ApiResult<Void> handleDuplicateEmail(DuplicateEmailException ex) {
+        return ApiResult.error("DUPLICATE_EMAIL", ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateLoginIdException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleDuplicateLoginId(DuplicateLoginIdException ex) {
-        return ApiResponse.error("DUPLICATE_LOGIN_ID", ex.getMessage());
+    public ApiResult<Void> handleDuplicateLoginId(DuplicateLoginIdException ex) {
+        return ApiResult.error("DUPLICATE_LOGIN_ID", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleValidation(MethodArgumentNotValidException ex) {
+    public ApiResult<Void> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult()
                 .getAllErrors()
                 .stream()
@@ -35,6 +35,6 @@ public class AuthExceptionHandler {
                 .filter(msg -> msg != null && !msg.isBlank())
                 .findFirst()
                 .orElse("요청 값이 올바르지 않습니다.");
-        return ApiResponse.error("INVALID_INPUT", message);
+        return ApiResult.error("INVALID_INPUT", message);
     }
 }

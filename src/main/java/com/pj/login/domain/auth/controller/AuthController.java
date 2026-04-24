@@ -1,10 +1,12 @@
 package com.pj.login.domain.auth.controller;
 
-import com.pj.login.common.response.ApiResponse;
+import com.pj.login.common.response.ApiResult;
 import com.pj.login.domain.auth.dto.SignupRequest;
 import com.pj.login.domain.auth.dto.SignupResponse;
 import com.pj.login.domain.auth.service.AuthSignupService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,10 +26,12 @@ public class AuthController {
     }
 
     @Operation(summary = "회원가입", description = "로컬 계정 회원가입을 처리합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "회원가입 성공")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "요청 값 오류 또는 중복 계정")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "회원가입 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 값 오류 또는 중복 계정")
+    })
     @PostMapping("/signup")
-    public ApiResponse<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
-        return ApiResponse.success(authSignupService.signup(request));
+    public ApiResult<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
+        return ApiResult.success(authSignupService.signup(request));
     }
 }
