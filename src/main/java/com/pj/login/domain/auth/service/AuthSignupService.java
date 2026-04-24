@@ -35,43 +35,68 @@ public class AuthSignupService {
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        if (identityRepository.existsByProviderTypeAndLoginId(ProviderType.LOCAL, request.loginId())) {
-            throw new DuplicateLoginIdException();
-        }
+        validateSignupRequest(request);
+
+        User user = createUser(request);
+        Identity identity = createLocalIdentity(request);
+        Password password = createPassword(request.password());
+
+        identity.addPassword(password);
+        user.addIdentity(identity);
+
+        return SignupResponse.from(userRepository.save(user));
+    }
+
+    private void validateSignupRequest(SignupRequest request) {
+        validateDuplicateLoginId(request.loginId());
+
         // 서버 설정으로 추후 제한조건을 할 것.
         // 해당부분은 loginid = email이 같을떈 필수 조건으로 해야한다.
-        if (userRepository.existsByEmail(request.email())) {
+        validateDuplicateEmail(request.email());
+    }
+
+    private void validateDuplicateLoginId(String loginId) {
+        if (identityRepository.existsByProviderTypeAndLoginId(ProviderType.LOCAL, loginId)) {
+            throw new DuplicateLoginIdException();
+        }
+    }
+
+    private void validateDuplicateEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
             throw new DuplicateEmailException();
         }
+    }
 
-        User user = User.builder()
+    private User createUser(SignupRequest request) {
+        return User.builder()
                 .accountStatus(AccountStatus.ACTIVE)
                 .email(request.email())
                 .emailVerified(false)
                 .phoneNumber(request.phoneNumber())
                 .phoneVerified(false)
                 .build();
+    }
 
-        Identity identity = Identity.builder()
+    private Identity createLocalIdentity(SignupRequest request) {
+        return Identity.builder()
                 .providerType(ProviderType.LOCAL)
                 .loginId(request.loginId())
                 .principalEmail(request.email())
                 .linked(true)
                 .build();
+    }
 
+    private Password createPassword(String rawPassword) {
         PasswordHashingService.EncodedPassword encodedPassword =
-                passwordHashingService.encode(request.password());
+                passwordHashingService.encode(rawPassword);
 
-        Password password = Password.createEncoded(
+        return Password.createEncoded(
                 encodedPassword.hash(),
                 encodedPassword.algo(),
                 LocalDateTime.now()
         );
-
-        identity.addPassword(password);
-        user.addIdentity(identity);
-        userRepository.save(user);
-
-        return new SignupResponse(user.getUserUuid(), user.getAccountStatus());
     }
+
+
+
 }

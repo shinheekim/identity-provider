@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.dto;
 
 import com.pj.login.domain.auth.constant.AccountStatus;
+import com.pj.login.domain.auth.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
@@ -13,4 +14,8 @@ public record SignupResponse(
         @Schema(description = "계정 상태", example = "ACTIVE")
         AccountStatus accountStatus
 ) {
+
+        public static SignupResponse from(User user) {
+                return new SignupResponse(user.getUserUuid(), user.getAccountStatus());
+        }
 }
