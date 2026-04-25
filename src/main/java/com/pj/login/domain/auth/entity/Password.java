@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -81,5 +82,27 @@ public class Password extends BaseTimeEntity {
 
     void assignIdentity(Identity identity) {
         this.identity = identity;
+    }
+
+    public boolean isLockedAt(LocalDateTime referenceTime) {
+        return lockedUntil != null && lockedUntil.isAfter(referenceTime);
+    }
+
+    public void clearLockIfExpired(LocalDateTime referenceTime) {
+        if (lockedUntil != null && !lockedUntil.isAfter(referenceTime)) {
+            clearFailureState();
+        }
+    }
+
+    public void recordFailure(LocalDateTime failedAt, int maxFailCount, Duration lockDuration) {
+        failCount += 1;
+        if (failCount >= maxFailCount) {
+            lockedUntil = failedAt.plus(lockDuration);
+        }
+    }
+
+    public void clearFailureState() {
+        failCount = 0;
+        lockedUntil = null;
     }
 }

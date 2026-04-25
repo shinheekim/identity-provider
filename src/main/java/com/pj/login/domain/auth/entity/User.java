@@ -74,4 +74,8 @@ public class User extends BaseTimeEntity {
         identities.add(identity);
         identity.assignUser(this);
     }
+
+    public void updateLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
 }

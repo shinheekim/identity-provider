@@ -69,4 +69,40 @@ public class LoginHistory extends CreatedAtEntity {
         this.clientIp = clientIp;
         this.userAgent = userAgent;
     }
+
+    public static LoginHistory success(
+            Long userId,
+            ProviderType providerType,
+            String loginId,
+            String clientIp,
+            String userAgent
+    ) {
+        return LoginHistory.builder()
+                .userId(userId)
+                .providerType(providerType)
+                .loginId(loginId)
+                .attemptResult(LoginAttemptResult.SUCCESS)
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .build();
+    }
+
+    public static LoginHistory failure(
+            Long userId,
+            ProviderType providerType,
+            String loginId,
+            LoginFailureReason failReason,
+            String clientIp,
+            String userAgent
+    ) {
+        return LoginHistory.builder()
+                .userId(userId)
+                .providerType(providerType)
+                .loginId(loginId)
+                .attemptResult(LoginAttemptResult.FAILURE)
+                .failReason(failReason)
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .build();
+    }
 }
