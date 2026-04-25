@@ -22,6 +22,9 @@ import java.util.UUID;
 public class JwtTokenService {
 
     private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final JwtProperties jwtProperties;
     private final byte[] secretBytes;
@@ -31,10 +34,22 @@ public class JwtTokenService {
         this.secretBytes = jwtProperties.secretBytes();
     }
 
-    // 사용자 UUID를 주체로 하는 JWT 액세스 토큰을 발급한다. (Nimbus JOSE JWT 라이브러리를 사용하여 JWT 생성 및 서명)
-    public JwtAccessToken issueAccessToken(UUID userUuid, LocalDateTime issuedAt) {
+    public JwtToken issueAccessToken(UUID userUuid, LocalDateTime issuedAt) {
+        return issueToken(userUuid, issuedAt, jwtProperties.accessTokenExpirySeconds(), ACCESS_TOKEN_TYPE);
+    }
+
+    public JwtToken issueRefreshToken(UUID userUuid, LocalDateTime issuedAt) {
+        return issueToken(userUuid, issuedAt, jwtProperties.refreshTokenExpirySeconds(), REFRESH_TOKEN_TYPE);
+    }
+
+    private JwtToken issueToken(
+            UUID userUuid,
+            LocalDateTime issuedAt,
+            long expirySeconds,
+            String tokenType
+    ) {
         Date issuedAtDate = Date.from(issuedAt.atZone(KOREA_ZONE_ID).toInstant());
-        LocalDateTime expiresAt = issuedAt.plusSeconds(jwtProperties.accessTokenExpirySeconds());
+        LocalDateTime expiresAt = issuedAt.plusSeconds(expirySeconds);
         Date expiresAtDate = Date.from(expiresAt.atZone(KOREA_ZONE_ID).toInstant());
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -43,6 +58,7 @@ public class JwtTokenService {
                 .jwtID(UUID.randomUUID().toString())
                 .issueTime(issuedAtDate)
                 .expirationTime(expiresAtDate)
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .build();
 
         try {
@@ -53,13 +69,13 @@ public class JwtTokenService {
                     claimsSet
             );
             signedJWT.sign(new MACSigner(secretBytes));
-            return new JwtAccessToken(signedJWT.serialize(), expiresAt);
+            return new JwtToken(signedJWT.serialize(), expiresAt);
         } catch (JOSEException ex) {
             throw new JwtGenerationException("JWT 생성 중 오류가 발생했습니다.", ex);
         }
     }
 
-    public record JwtAccessToken(
+    public record JwtToken(
             String token,
             LocalDateTime expiresAt
     ) {

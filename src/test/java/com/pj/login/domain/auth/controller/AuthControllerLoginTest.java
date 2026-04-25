@@ -52,8 +52,8 @@ class AuthControllerLoginTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 시 액세스 토큰과 만료 시각을 반환한다")
-    void login_success_returns_access_token() throws Exception {
+    @DisplayName("로그인 성공 시 액세스 토큰과 리프레시 토큰을 반환한다")
+    void login_success_returns_access_and_refresh_tokens() throws Exception {
         seedUser("controller-login@example.com");
 
         LoginRequest request = new LoginRequest("controller-login@example.com", "Password123!");
@@ -67,6 +67,8 @@ class AuthControllerLoginTest {
                 .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.accessTokenExpiresAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshTokenExpiresAt").isNotEmpty())
                 .andExpect(jsonPath("$.data.loginAt").isNotEmpty());
     }
 
