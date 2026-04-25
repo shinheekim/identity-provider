@@ -33,4 +33,4 @@ app:
   jwt:
     issuer: taesin
     access-token-expiry-seconds: 1800
-    secret: ${JWT_SECRET:dev-only-jwt-secret-key-change-me-1234567890-abcdef}
+    secret: ${JWT_SECRET}
