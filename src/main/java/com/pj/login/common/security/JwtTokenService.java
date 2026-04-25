@@ -9,7 +9,6 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.pj.login.common.config.JwtProperties;
 import com.pj.login.common.security.exception.JwtGenerationException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,14 +16,10 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
-@Slf4j
 @Service
 public class JwtTokenService {
 
     private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
-    private static final String TOKEN_TYPE_CLAIM = "type";
-    private static final String ACCESS_TOKEN_TYPE = "access";
-    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final JwtProperties jwtProperties;
     private final byte[] secretBytes;
@@ -35,21 +30,8 @@ public class JwtTokenService {
     }
 
     public JwtToken issueAccessToken(UUID userUuid, LocalDateTime issuedAt) {
-        return issueToken(userUuid, issuedAt, jwtProperties.accessTokenExpirySeconds(), ACCESS_TOKEN_TYPE);
-    }
-
-    public JwtToken issueRefreshToken(UUID userUuid, LocalDateTime issuedAt) {
-        return issueToken(userUuid, issuedAt, jwtProperties.refreshTokenExpirySeconds(), REFRESH_TOKEN_TYPE);
-    }
-
-    private JwtToken issueToken(
-            UUID userUuid,
-            LocalDateTime issuedAt,
-            long expirySeconds,
-            String tokenType
-    ) {
         Date issuedAtDate = Date.from(issuedAt.atZone(KOREA_ZONE_ID).toInstant());
-        LocalDateTime expiresAt = issuedAt.plusSeconds(expirySeconds);
+        LocalDateTime expiresAt = issuedAt.plusSeconds(jwtProperties.accessTokenExpirySeconds());
         Date expiresAtDate = Date.from(expiresAt.atZone(KOREA_ZONE_ID).toInstant());
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -58,7 +40,6 @@ public class JwtTokenService {
                 .jwtID(UUID.randomUUID().toString())
                 .issueTime(issuedAtDate)
                 .expirationTime(expiresAtDate)
-                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .build();
 
         try {

@@ -85,7 +85,6 @@ class AuthLoginServiceTest {
             );
 
             then(jwtTokenService).should().issueAccessToken(fixture.user().getUserUuid(), response.loginAt());
-            then(jwtTokenService).should().issueRefreshToken(fixture.user().getUserUuid(), response.loginAt());
             LoginHistory loginHistory = capturedLoginHistory();
 
             assertSoftly(softly -> {
@@ -93,8 +92,6 @@ class AuthLoginServiceTest {
                 softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
                 softly.assertThat(response.accessToken()).isEqualTo("access-token");
                 softly.assertThat(response.accessTokenExpiresAt()).isAfter(response.loginAt());
-                softly.assertThat(response.refreshToken()).isEqualTo("refresh-token");
-                softly.assertThat(response.refreshTokenExpiresAt()).isAfter(response.accessTokenExpiresAt());
                 softly.assertThat(fixture.user().getLastLoginAt()).isEqualTo(response.loginAt());
                 softly.assertThat(fixture.password().getFailCount()).isZero();
                 softly.assertThat(fixture.password().getLockedUntil()).isNull();
@@ -167,7 +164,6 @@ class AuthLoginServiceTest {
                 softly.assertThat(response.userUuid()).isEqualTo(fixture.user().getUserUuid());
                 softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
                 softly.assertThat(response.accessToken()).isEqualTo("access-token");
-                softly.assertThat(response.refreshToken()).isEqualTo("refresh-token");
                 softly.assertThat(loginHistory.getLoginId()).isEqualTo("tester01");
                 softly.assertThat(loginHistory.getAttemptResult()).isEqualTo(LoginAttemptResult.SUCCESS);
             });
@@ -184,11 +180,6 @@ class AuthLoginServiceTest {
                 .willAnswer(invocation -> {
                     LocalDateTime issuedAt = invocation.getArgument(1);
                     return new JwtTokenService.JwtToken("access-token", issuedAt.plusHours(1));
-                });
-        given(jwtTokenService.issueRefreshToken(eq(user.getUserUuid()), any(LocalDateTime.class)))
-                .willAnswer(invocation -> {
-                    LocalDateTime issuedAt = invocation.getArgument(1);
-                    return new JwtTokenService.JwtToken("refresh-token", issuedAt.plusDays(14));
                 });
     }
 

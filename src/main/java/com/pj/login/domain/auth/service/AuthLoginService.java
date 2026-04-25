@@ -126,16 +126,12 @@ public class AuthLoginService {
 
         JwtTokenService.JwtToken accessToken =
                 jwtTokenService.issueAccessToken(user.getUserUuid(), loginContext.attemptedAt());
-        JwtTokenService.JwtToken refreshToken =
-                jwtTokenService.issueRefreshToken(user.getUserUuid(), loginContext.attemptedAt());
 
         return new LoginResponse(
                 user.getUserUuid(),
                 user.getAccountStatus(),
                 accessToken.token(),
                 accessToken.expiresAt(),
-                refreshToken.token(),
-                refreshToken.expiresAt(),
                 loginContext.attemptedAt()
         );
     }

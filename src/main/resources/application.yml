@@ -33,5 +33,4 @@ app:
   jwt:
     issuer: taesin
     access-token-expiry-seconds: 1800
-    refresh-token-expiry-seconds: 1209600
     secret: ${JWT_SECRET}
