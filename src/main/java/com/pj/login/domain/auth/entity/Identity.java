@@ -2,6 +2,7 @@ package com.pj.login.domain.auth.entity;
 
 import com.pj.login.common.converter.YesNoBooleanConverter;
 import com.pj.login.common.entity.BaseTimeEntity;
+import com.pj.login.domain.auth.constant.ProviderType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -25,8 +26,9 @@ public class Identity extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "provider_type", nullable = false, length = 20)
-    private String providerType;
+    private ProviderType providerType;
 
     @Column(name = "provider_user_id", length = 255)
     private String providerUserId;
@@ -46,7 +48,7 @@ public class Identity extends BaseTimeEntity {
 
     @Builder
     private Identity(
-            String providerType,
+            ProviderType providerType,
             String providerUserId,
             String loginId,
             String principalEmail,

@@ -2,6 +2,7 @@ package com.pj.login.domain.auth.entity;
 
 import com.pj.login.common.converter.YesNoBooleanConverter;
 import com.pj.login.common.entity.BaseTimeEntity;
+import com.pj.login.domain.auth.constant.AccountStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -26,8 +27,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "user_uuid", nullable = false, unique = true, updatable = false, columnDefinition = "uuid")
     private UUID userUuid;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "account_status", nullable = false, length = 20)
-    private String accountStatus;
+    private AccountStatus accountStatus;
 
     @Column(length = 255)
     private String email;
@@ -52,7 +54,7 @@ public class User extends BaseTimeEntity {
     @Builder
     private User(
             UUID userUuid,
-            String accountStatus,
+            AccountStatus accountStatus,
             String email,
             boolean emailVerified,
             String phoneNumber,
