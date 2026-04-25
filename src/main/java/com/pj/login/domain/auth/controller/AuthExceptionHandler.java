@@ -1,10 +1,9 @@
 package com.pj.login.domain.auth.controller;
 
 import com.pj.login.common.response.ApiResponse;
+import com.pj.login.domain.auth.exception.AuthLoginException;
 import com.pj.login.domain.auth.exception.DuplicateEmailException;
 import com.pj.login.domain.auth.exception.DuplicateLoginIdException;
-import com.pj.login.domain.auth.exception.InvalidLoginCredentialsException;
-import com.pj.login.domain.auth.exception.LoginNotAllowedException;
 import com.pj.login.domain.auth.exception.PasswordLockedException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -28,22 +27,16 @@ public class AuthExceptionHandler {
         return ApiResponse.error("DUPLICATE_LOGIN_ID", ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidLoginCredentialsException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ApiResponse<Void> handleInvalidLoginCredentials(InvalidLoginCredentialsException ex) {
-        return ApiResponse.error("INVALID_LOGIN_CREDENTIALS", ex.getMessage());
-    }
-
-    @ExceptionHandler(LoginNotAllowedException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ApiResponse<Void> handleLoginNotAllowed(LoginNotAllowedException ex) {
-        return ApiResponse.error("LOGIN_NOT_ALLOWED", ex.getMessage());
-    }
-
     @ExceptionHandler(PasswordLockedException.class)
     @ResponseStatus(HttpStatus.LOCKED)
     public ApiResponse<Void> handlePasswordLocked(PasswordLockedException ex) {
         return ApiResponse.error("PASSWORD_LOCKED", ex.getMessage());
+    }
+
+    @ExceptionHandler(AuthLoginException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ApiResponse<Void> handleAuthLoginFailure(AuthLoginException ex) {
+        return ApiResponse.error("INVALID_LOGIN_CREDENTIALS", "로그인 ID 또는 비밀번호가 올바르지 않습니다.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

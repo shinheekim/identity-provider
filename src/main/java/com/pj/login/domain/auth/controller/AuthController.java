@@ -32,7 +32,6 @@ public class AuthController {
     @Operation(summary = "로그인", description = "로컬 계정 로그인 처리를 수행합니다.")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "로그인 ID 또는 비밀번호 오류")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "로그인 불가 상태의 계정")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "423", description = "비밀번호 입력 오류 누적으로 잠긴 계정")
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(
