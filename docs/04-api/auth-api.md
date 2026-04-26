@@ -192,8 +192,8 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"loginId": "test@example.com",
-"password": "Password123!"
+    "loginId": "test@example.com",
+    "password": "Password123!"
 }
 ```
 
@@ -228,12 +228,12 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"success": true,
-"data": {
-"userUuid": "550e8400-e29b-41d4-a716-446655440000",
-"accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token",
-"refreshToken": "refresh-token-sample-value",
-"accountStatus": "ACTIVE"
+    "success": true,
+    "data": {
+        "userUuid": "550e8400-e29b-41d4-a716-446655440000",
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token",
+        "refreshToken": "refresh-token-sample-value",
+        "accountStatus": "ACTIVE"
 }
 }
 ```
@@ -246,11 +246,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"success": false,
-"error": {
-"code": "INVALID_CREDENTIALS",
-"message": "로그인 ID 또는 비밀번호가 올바르지 않습니다."
-}
+    "success": false,
+    "error": {
+        "code": "INVALID_CREDENTIALS",
+        "message": "로그인 ID 또는 비밀번호가 올바르지 않습니다."
+    }
 }
 ```
 
@@ -259,11 +259,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"success": false,
-"error": {
-"code": "ACCOUNT_DORMANT",
-"message": "휴면 계정입니다."
-}
+    "success": false,
+    "error": {
+        "code": "ACCOUNT_DORMANT",
+        "message": "휴면 계정입니다."
+    }
 }
 ```
 
@@ -271,11 +271,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"success": false,
-"error": {
-"code": "ACCOUNT_SUSPENDED",
-"message": "이용이 제한된 계정입니다."
-}
+    "success": false,
+    "error": {
+        "code": "ACCOUNT_SUSPENDED",
+        "message": "이용이 제한된 계정입니다."
+    }
 }
 ```
 
@@ -283,11 +283,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"success": false,
-"error": {
-"code": "ACCOUNT_WITHDRAWN",
-"message": "탈퇴한 계정입니다."
-}
+    "success": false, 
+    "error": {
+        "code": "ACCOUNT_WITHDRAWN",
+        "message": "탈퇴한 계정입니다."
+    }
 }
 ```
 
@@ -322,8 +322,8 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ```json
 {
-"provider": "KAKAO",
-"providerAccessToken": "kakao-access-token-value"
+    "provider": "KAKAO",
+    "providerAccessToken": "kakao-access-token-value"
 }
 ```
 
@@ -362,11 +362,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 {
   "success": true,
   "data": {
-    "userUuid": "550e8400-e29b-41d4-a716-446655440000",
-    "accessToken": "access-token-value",
-    "refreshToken": "refresh-token-value",
-    "accountStatus": "ACTIVE",
-    "isNewUser": false
+      "userUuid": "550e8400-e29b-41d4-a716-446655440000",
+      "accessToken": "access-token-value",
+      "refreshToken": "refresh-token-value",
+      "accountStatus": "ACTIVE",
+      "isNewUser": false
   }
 }
 ```
