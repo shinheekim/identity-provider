@@ -87,6 +87,22 @@ class AuthControllerLoginTest {
     }
 
     @Test
+    @DisplayName("ACTIVE가 아닌 계정은 403과 로그인 불가 코드를 반환한다")
+    void login_not_active_account_returns_forbidden() throws Exception {
+        seedUser("dormant-user@example.com", AccountStatus.DORMANT);
+
+        LoginRequest request = new LoginRequest("dormant-user@example.com", "Password123!");
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("LOGIN_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.error.message").value("활성 상태의 계정만 로그인할 수 있습니다."));
+    }
+
+    @Test
     @DisplayName("로그인 ID 누락 시 검증 에러를 반환한다")
     void login_missing_login_id_returns_validation_error() throws Exception {
         LoginRequest request = new LoginRequest("", "Password123!");
@@ -101,8 +117,12 @@ class AuthControllerLoginTest {
     }
 
     private void seedUser(String loginId) {
+        seedUser(loginId, AccountStatus.ACTIVE);
+    }
+
+    private void seedUser(String loginId, AccountStatus accountStatus) {
         User user = User.builder()
-                .accountStatus(AccountStatus.ACTIVE)
+                .accountStatus(accountStatus)
                 .email(loginId)
                 .emailVerified(false)
                 .phoneVerified(false)

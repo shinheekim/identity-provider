@@ -13,6 +13,7 @@ import com.pj.login.domain.auth.entity.LoginHistory;
 import com.pj.login.domain.auth.entity.Password;
 import com.pj.login.domain.auth.entity.User;
 import com.pj.login.domain.auth.exception.InvalidLoginCredentialsException;
+import com.pj.login.domain.auth.exception.LoginNotAllowedException;
 import com.pj.login.domain.auth.repository.IdentityRepository;
 import com.pj.login.domain.auth.repository.LoginHistoryRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -141,6 +142,68 @@ class AuthLoginServiceTest {
         }
 
         @Test
+        @DisplayName("비밀번호가 없으면 PASSWORD_NOT_SET 이력을 남기고 로그인에 실패한다")
+        void records_password_not_set_history_when_password_is_missing() {
+            LocalLoginFixture fixture = localLoginFixtureWithoutPassword(
+                    "password-not-set@example.com",
+                    "password-not-set@example.com",
+                    AccountStatus.ACTIVE
+            );
+            givenFoundIdentity("password-not-set@example.com", fixture.identity());
+
+            assertThatThrownBy(() -> authLoginService.login(
+                    new LoginRequest("password-not-set@example.com", CORRECT_PASSWORD),
+                    CLIENT_IP,
+                    USER_AGENT
+            )).isInstanceOf(InvalidLoginCredentialsException.class);
+
+            LoginHistory loginHistory = capturedLoginHistory();
+
+            assertSoftly(softly -> {
+                softly.assertThat(loginHistory.getProviderType()).isEqualTo(ProviderType.LOCAL);
+                softly.assertThat(loginHistory.getLoginId()).isEqualTo("password-not-set@example.com");
+                softly.assertThat(loginHistory.getAttemptResult()).isEqualTo(LoginAttemptResult.FAILURE);
+                softly.assertThat(loginHistory.getFailReason()).isEqualTo(LoginFailureReason.PASSWORD_NOT_SET);
+                softly.assertThat(loginHistory.getClientIp()).isEqualTo(CLIENT_IP);
+                softly.assertThat(loginHistory.getUserAgent()).isEqualTo(USER_AGENT);
+            });
+
+            then(passwordHashingService).shouldHaveNoInteractions();
+            then(jwtTokenService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("ACTIVE가 아닌 계정이면 ACCOUNT_NOT_ACTIVE 이력을 남기고 로그인에 실패한다")
+        void records_account_not_active_history_when_account_is_not_active() {
+            LocalLoginFixture fixture = localLoginFixture(
+                    "dormant-user@example.com",
+                    "dormant-user@example.com",
+                    AccountStatus.DORMANT
+            );
+            givenFoundIdentity("dormant-user@example.com", fixture.identity());
+
+            assertThatThrownBy(() -> authLoginService.login(
+                    new LoginRequest("dormant-user@example.com", CORRECT_PASSWORD),
+                    CLIENT_IP,
+                    USER_AGENT
+            )).isInstanceOf(LoginNotAllowedException.class);
+
+            LoginHistory loginHistory = capturedLoginHistory();
+
+            assertSoftly(softly -> {
+                softly.assertThat(loginHistory.getProviderType()).isEqualTo(ProviderType.LOCAL);
+                softly.assertThat(loginHistory.getLoginId()).isEqualTo("dormant-user@example.com");
+                softly.assertThat(loginHistory.getAttemptResult()).isEqualTo(LoginAttemptResult.FAILURE);
+                softly.assertThat(loginHistory.getFailReason()).isEqualTo(LoginFailureReason.ACCOUNT_NOT_ACTIVE);
+                softly.assertThat(loginHistory.getClientIp()).isEqualTo(CLIENT_IP);
+                softly.assertThat(loginHistory.getUserAgent()).isEqualTo(USER_AGENT);
+            });
+
+            then(passwordHashingService).shouldHaveNoInteractions();
+            then(jwtTokenService).shouldHaveNoInteractions();
+        }
+
+        @Test
         @DisplayName("비이메일 loginId로도 로그인할 수 있다")
         void supports_non_email_login_id() {
             LocalLoginFixture fixture = localLoginFixture("tester01", "tester01@example.com");
@@ -189,8 +252,29 @@ class AuthLoginServiceTest {
     }
 
     private LocalLoginFixture localLoginFixture(String loginId, String email) {
+        return localLoginFixture(loginId, email, AccountStatus.ACTIVE);
+    }
+
+    private LocalLoginFixture localLoginFixture(String loginId, String email, AccountStatus accountStatus) {
+        return localLoginFixture(loginId, email, accountStatus, true);
+    }
+
+    private LocalLoginFixture localLoginFixtureWithoutPassword(
+            String loginId,
+            String email,
+            AccountStatus accountStatus
+    ) {
+        return localLoginFixture(loginId, email, accountStatus, false);
+    }
+
+    private LocalLoginFixture localLoginFixture(
+            String loginId,
+            String email,
+            AccountStatus accountStatus,
+            boolean withPassword
+    ) {
         User user = User.builder()
-                .accountStatus(AccountStatus.ACTIVE)
+                .accountStatus(accountStatus)
                 .email(email)
                 .emailVerified(false)
                 .phoneVerified(false)
@@ -203,13 +287,15 @@ class AuthLoginServiceTest {
                 .linked(true)
                 .build();
 
-        Password password = Password.createEncoded(
-                ENCODED_PASSWORD,
-                PasswordAlgo.bcrypt,
-                LocalDateTime.now().minusDays(1)
-        );
-
-        identity.addPassword(password);
+        Password password = null;
+        if (withPassword) {
+            password = Password.createEncoded(
+                    ENCODED_PASSWORD,
+                    PasswordAlgo.bcrypt,
+                    LocalDateTime.now().minusDays(1)
+            );
+            identity.addPassword(password);
+        }
         user.addIdentity(identity);
 
         return new LocalLoginFixture(user, identity, password);
