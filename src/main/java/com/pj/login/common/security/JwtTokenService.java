@@ -9,17 +9,15 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.pj.login.common.config.JwtProperties;
 import com.pj.login.common.security.exception.JwtGenerationException;
+import com.pj.login.common.time.KoreaTime;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
 @Service
 public class JwtTokenService {
-
-    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     private final JwtProperties jwtProperties;
     private final byte[] secretBytes;
@@ -30,9 +28,9 @@ public class JwtTokenService {
     }
 
     public JwtToken issueAccessToken(UUID userUuid, LocalDateTime issuedAt) {
-        Date issuedAtDate = Date.from(issuedAt.atZone(KOREA_ZONE_ID).toInstant());
         LocalDateTime expiresAt = issuedAt.plusSeconds(jwtProperties.accessTokenExpirySeconds());
-        Date expiresAtDate = Date.from(expiresAt.atZone(KOREA_ZONE_ID).toInstant());
+        Date issuedAtDate = Date.from(issuedAt.atZone(KoreaTime.ZONE_ID).toInstant());
+        Date expiresAtDate = Date.from(expiresAt.atZone(KoreaTime.ZONE_ID).toInstant());
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .issuer(jwtProperties.issuer())

@@ -1,5 +1,6 @@
 package com.pj.login.common.entity;
 
+import com.pj.login.common.time.KoreaTime;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -20,13 +21,13 @@ public abstract class BaseTimeEntity {
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = KoreaTime.now();
         createdAt = now;
         updatedAt = now;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = KoreaTime.now();
     }
 }
