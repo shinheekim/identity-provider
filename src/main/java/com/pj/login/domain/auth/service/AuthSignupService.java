@@ -1,5 +1,6 @@
 package com.pj.login.domain.auth.service;
 
+import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.ProviderType;
 import com.pj.login.domain.auth.dto.SignupRequest;
@@ -11,27 +12,18 @@ import com.pj.login.domain.auth.exception.DuplicateEmailException;
 import com.pj.login.domain.auth.exception.DuplicateLoginIdException;
 import com.pj.login.domain.auth.repository.IdentityRepository;
 import com.pj.login.domain.auth.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @Service
+@RequiredArgsConstructor
 public class AuthSignupService {
 
     private final UserRepository userRepository;
     private final IdentityRepository identityRepository;
     private final PasswordHashingService passwordHashingService;
-
-    public AuthSignupService(
-            UserRepository userRepository,
-            IdentityRepository identityRepository,
-            PasswordHashingService passwordHashingService
-    ) {
-        this.userRepository = userRepository;
-        this.identityRepository = identityRepository;
-        this.passwordHashingService = passwordHashingService;
-    }
+    private final TimeProvider timeProvider;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -93,10 +85,7 @@ public class AuthSignupService {
         return Password.createEncoded(
                 encodedPassword.hash(),
                 encodedPassword.algo(),
-                LocalDateTime.now()
+                timeProvider.now()
         );
     }
-
-
-
 }

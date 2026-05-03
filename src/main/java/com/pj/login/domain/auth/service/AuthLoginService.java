@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.service;
 
 import com.pj.login.common.security.JwtTokenService;
+import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.LoginFailureReason;
 import com.pj.login.domain.auth.constant.ProviderType;
@@ -37,6 +38,7 @@ public class AuthLoginService {
     private final LoginHistoryRepository loginHistoryRepository;
     private final JwtTokenService jwtTokenService;
     private final PasswordHashingService passwordHashingService;
+    private final TimeProvider timeProvider;
 
     @Transactional(noRollbackFor = AuthLoginException.class)
     public LoginResponse login(LoginRequest request, String clientIp, String userAgent) {
@@ -45,7 +47,7 @@ public class AuthLoginService {
                 request.password(),
                 clientIp,
                 userAgent,
-                LocalDateTime.now()
+                timeProvider.now()
         );
 
         Identity identity = getIdentityOrThrow(loginContext);

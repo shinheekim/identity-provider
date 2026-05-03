@@ -1,6 +1,8 @@
 package com.pj.login.domain.auth.service;
 
 import com.pj.login.common.security.JwtTokenService;
+import com.pj.login.common.time.KoreaTime;
+import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.LoginAttemptResult;
 import com.pj.login.domain.auth.constant.LoginFailureReason;
@@ -24,8 +26,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -44,6 +49,7 @@ class AuthLoginServiceTest {
     private static final String CORRECT_PASSWORD = "Password123!";
     private static final String WRONG_PASSWORD = "WrongPassword123!";
     private static final String ENCODED_PASSWORD = "encoded-password";
+    private static final Instant FIXED_NOW = Instant.parse("2026-05-04T00:00:00Z");
 
     @Mock
     private IdentityRepository identityRepository;
@@ -56,6 +62,9 @@ class AuthLoginServiceTest {
 
     @Mock
     private PasswordHashingService passwordHashingService;
+
+    @Spy
+    private TimeProvider timeProvider = new TimeProvider(Clock.fixed(FIXED_NOW, KoreaTime.ZONE_ID));
 
     @InjectMocks
     private AuthLoginService authLoginService;
@@ -242,7 +251,7 @@ class AuthLoginServiceTest {
         given(jwtTokenService.issueAccessToken(eq(user.getUserUuid()), any(LocalDateTime.class)))
                 .willAnswer(invocation -> {
                     LocalDateTime issuedAt = invocation.getArgument(1);
-                    return new JwtTokenService.JwtToken("access-token", issuedAt.plusHours(1));
+                    return new JwtTokenService.JwtToken("access-token", issuedAt.plusSeconds(3600));
                 });
     }
 
@@ -292,7 +301,7 @@ class AuthLoginServiceTest {
             password = Password.createEncoded(
                     ENCODED_PASSWORD,
                     PasswordAlgo.bcrypt,
-                    LocalDateTime.now().minusDays(1)
+                    timeProvider.now().minusDays(1)
             );
             identity.addPassword(password);
         }

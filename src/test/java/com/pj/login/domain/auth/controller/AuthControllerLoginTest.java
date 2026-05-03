@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.PasswordAlgo;
 import com.pj.login.domain.auth.constant.ProviderType;
@@ -22,8 +23,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.time.LocalDateTime;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,6 +42,9 @@ class AuthControllerLoginTest {
 
     @Autowired
     private PasswordHashingService passwordHashingService;
+
+    @Autowired
+    private TimeProvider timeProvider;
 
     private MockMvc mockMvc;
 
@@ -141,7 +143,7 @@ class AuthControllerLoginTest {
         Password password = Password.createEncoded(
                 encodedPassword.hash(),
                 encodedPassword.algo(),
-                LocalDateTime.now()
+                timeProvider.now()
         );
 
         identity.addPassword(password);

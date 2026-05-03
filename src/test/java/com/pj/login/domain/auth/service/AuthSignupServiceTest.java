@@ -1,5 +1,6 @@
 package com.pj.login.domain.auth.service;
 
+import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.PasswordAlgo;
 import com.pj.login.domain.auth.constant.ProviderType;
@@ -18,8 +19,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
 @SpringBootTest
 @Transactional
 class AuthSignupServiceTest {
@@ -27,16 +26,19 @@ class AuthSignupServiceTest {
     private final UserRepository userRepository;
     private final AuthSignupService authSignupService;
     private final PasswordHashingService passwordHashingService;
+    private final TimeProvider timeProvider;
 
     @Autowired
     AuthSignupServiceTest(
             UserRepository userRepository,
             AuthSignupService authSignupService,
-            PasswordHashingService passwordHashingService
+            PasswordHashingService passwordHashingService,
+            TimeProvider timeProvider
     ) {
         this.userRepository = userRepository;
         this.authSignupService = authSignupService;
         this.passwordHashingService = passwordHashingService;
+        this.timeProvider = timeProvider;
     }
 
 
@@ -78,7 +80,7 @@ class AuthSignupServiceTest {
         )).isTrue();
         Assertions.assertThat(password.getPasswordAlgo()).isEqualTo(PasswordAlgo.bcrypt);
         Assertions.assertThat(password.getFailCount()).isZero();
-        Assertions.assertThat(password.getPasswordChangedAt()).isBeforeOrEqualTo(LocalDateTime.now());
+        Assertions.assertThat(password.getPasswordChangedAt()).isBeforeOrEqualTo(timeProvider.now());
     }
 
 
@@ -141,7 +143,7 @@ class AuthSignupServiceTest {
         Password password = Password.createEncoded(
                 encodedPassword.hash(),
                 encodedPassword.algo(),
-                LocalDateTime.now()
+                timeProvider.now()
         );
 
         identity.addPassword(password);
