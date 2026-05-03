@@ -72,6 +72,9 @@ class AuthLoginServiceTest {
     @Captor
     private ArgumentCaptor<LoginHistory> loginHistoryCaptor;
 
+    @Captor
+    private ArgumentCaptor<LocalDateTime> issuedAtCaptor;
+
     @Nested
     @DisplayName("login()")
     class Login {
@@ -94,15 +97,16 @@ class AuthLoginServiceTest {
                     USER_AGENT
             );
 
-            then(jwtTokenService).should().issueAccessToken(fixture.user().getUserUuid(), response.loginAt());
+            then(jwtTokenService).should().issueAccessToken(eq(fixture.user().getUserUuid()), issuedAtCaptor.capture());
             LoginHistory loginHistory = capturedLoginHistory();
+            LocalDateTime issuedAt = issuedAtCaptor.getValue();
 
             assertSoftly(softly -> {
                 softly.assertThat(response.userUuid()).isEqualTo(fixture.user().getUserUuid());
-                softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
                 softly.assertThat(response.accessToken()).isEqualTo("access-token");
-                softly.assertThat(response.accessTokenExpiresAt()).isAfter(response.loginAt());
-                softly.assertThat(fixture.user().getLastLoginAt()).isEqualTo(response.loginAt());
+                softly.assertThat(response.refreshToken()).isNull();
+                softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
+                softly.assertThat(fixture.user().getLastLoginAt()).isEqualTo(issuedAt);
                 softly.assertThat(fixture.password().getFailCount()).isZero();
                 softly.assertThat(fixture.password().getLockedUntil()).isNull();
                 softly.assertThat(loginHistory.getProviderType()).isEqualTo(ProviderType.LOCAL);

@@ -131,10 +131,9 @@ public class AuthLoginService {
 
         return new LoginResponse(
                 user.getUserUuid(),
-                user.getAccountStatus(),
                 accessToken.token(),
-                accessToken.expiresAt(),
-                loginContext.attemptedAt()
+                null,
+                user.getAccountStatus()
         );
     }
 

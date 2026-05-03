@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,10 +67,11 @@ class AuthControllerLoginTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.userUuid").isNotEmpty())
-                .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.accessTokenExpiresAt").isNotEmpty())
-                .andExpect(jsonPath("$.data.loginAt").isNotEmpty());
+                .andExpect(jsonPath("$.data.refreshToken").value(nullValue()))
+                .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.accessTokenExpiresAt").doesNotExist())
+                .andExpect(jsonPath("$.data.loginAt").doesNotExist());
     }
 
     @Test
