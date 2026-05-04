@@ -93,7 +93,7 @@ Account API는 계정의 상태 관리와 생명주기(탈퇴 등)를 담당하�
 {
   "success": true,
   "data": {
-  "accountStatus": "ACTIVE"
+      "accountStatus": "ACTIVE"
     }
 }
 ```
@@ -183,7 +183,7 @@ Account API는 계정의 상태 관리와 생명주기(탈퇴 등)를 담당하�
 {
   "success": true,
   "data": {
-  "message": "회원 탈퇴가 완료되었습니다."
+      "message": "회원 탈퇴가 완료되었습니다."
   }
 }
 ```

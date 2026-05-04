@@ -14,6 +14,8 @@
 ### 결정 내용
 - [001-JWT](./ADR/ADR-001-JWT.md)
 - [002-user-identity](./ADR/ADR-002-user-identity.md)
+- [003-예외-로그](./ADR/ADR-003-예외-로그.md)
+- [004-타임존](./ADR/ADR-004-타임존.md)
 
 
 
