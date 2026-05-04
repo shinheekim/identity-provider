@@ -1,8 +1,13 @@
 package com.pj.login.domain.auth.entity;
 
 import com.pj.login.common.entity.CreatedAtEntity;
+import com.pj.login.domain.auth.constant.LoginAttemptResult;
+import com.pj.login.domain.auth.constant.LoginFailureReason;
+import com.pj.login.domain.auth.constant.ProviderType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,17 +30,20 @@ public class LoginHistory extends CreatedAtEntity {
     @Column(name = "user_id")
     private Long userId; // 히스토리성 데이터로 userId만 저장함
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "provider_type", nullable = false, length = 20)
-    private String providerType;
+    private ProviderType providerType;
 
     @Column(name = "login_id", length = 100)
     private String loginId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "attempt_result", nullable = false, length = 20)
-    private String attemptResult;
+    private LoginAttemptResult attemptResult;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "fail_reason", length = 100)
-    private String failReason;
+    private LoginFailureReason failReason;
 
     @Column(name = "client_ip", length = 45)
     private String clientIp;
@@ -46,10 +54,10 @@ public class LoginHistory extends CreatedAtEntity {
     @Builder
     private LoginHistory(
             Long userId,
-            String providerType,
+            ProviderType providerType,
             String loginId,
-            String attemptResult,
-            String failReason,
+            LoginAttemptResult attemptResult,
+            LoginFailureReason failReason,
             String clientIp,
             String userAgent
     ) {
@@ -60,5 +68,41 @@ public class LoginHistory extends CreatedAtEntity {
         this.failReason = failReason;
         this.clientIp = clientIp;
         this.userAgent = userAgent;
+    }
+
+    public static LoginHistory success(
+            Long userId,
+            ProviderType providerType,
+            String loginId,
+            String clientIp,
+            String userAgent
+    ) {
+        return LoginHistory.builder()
+                .userId(userId)
+                .providerType(providerType)
+                .loginId(loginId)
+                .attemptResult(LoginAttemptResult.SUCCESS)
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .build();
+    }
+
+    public static LoginHistory failure(
+            Long userId,
+            ProviderType providerType,
+            String loginId,
+            LoginFailureReason failReason,
+            String clientIp,
+            String userAgent
+    ) {
+        return LoginHistory.builder()
+                .userId(userId)
+                .providerType(providerType)
+                .loginId(loginId)
+                .attemptResult(LoginAttemptResult.FAILURE)
+                .failReason(failReason)
+                .clientIp(clientIp)
+                .userAgent(userAgent)
+                .build();
     }
 }

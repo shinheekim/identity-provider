@@ -1,5 +1,7 @@
 package com.pj.login.common.entity;
 
+import com.pj.login.common.time.KoreaTime;
+
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -16,6 +18,6 @@ public abstract class CreatedAtEntity {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = KoreaTime.now();
     }
 }
