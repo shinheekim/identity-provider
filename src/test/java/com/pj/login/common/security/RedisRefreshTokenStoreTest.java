@@ -55,6 +55,32 @@ class RedisRefreshTokenStoreTest {
         assertThat(redisKey).isEqualTo("auth:rt:v1:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET));
     }
 
+    @Test
+    @DisplayName("HMAC 해시 키로 저장된 사용자 UUID를 조회하고 삭제한다")
+    void consume_user_uuid_by_hmac_digest_key() throws Exception {
+        JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);
+        RedisRefreshTokenStore refreshTokenStore = new RedisRefreshTokenStore(stringRedisTemplate, jwtProperties);
+        UUID userUuid = UUID.randomUUID();
+        String redisKey = "auth:rt:v1:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET);
+        given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
+        given(valueOperations.getAndDelete(redisKey)).willReturn(userUuid.toString());
+
+        assertThat(refreshTokenStore.consumeUserUuid(RAW_REFRESH_TOKEN)).contains(userUuid);
+    }
+
+    @Test
+    @DisplayName("HMAC 해시 키로 리프레시 토큰을 삭제한다")
+    void delete_by_hmac_digest_key() throws Exception {
+        JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);
+        RedisRefreshTokenStore refreshTokenStore = new RedisRefreshTokenStore(stringRedisTemplate, jwtProperties);
+        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+
+        refreshTokenStore.delete(RAW_REFRESH_TOKEN);
+
+        then(stringRedisTemplate).should().delete(keyCaptor.capture());
+        assertThat(keyCaptor.getValue()).isEqualTo("auth:rt:v1:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET));
+    }
+
     private String hmacSha256(String value, String secret) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));

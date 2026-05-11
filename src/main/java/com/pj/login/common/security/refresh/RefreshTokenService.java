@@ -8,6 +8,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -27,6 +28,14 @@ public class RefreshTokenService {
         refreshTokenStore.save(token, userUuid, ttl);
 
         return new RefreshToken(token, issuedAt.plus(ttl));
+    }
+
+    public Optional<UUID> consumeUserUuid(String refreshToken) {
+        return refreshTokenStore.consumeUserUuid(refreshToken);
+    }
+
+    public void revokeRefreshToken(String refreshToken) {
+        refreshTokenStore.delete(refreshToken);
     }
 
     /**

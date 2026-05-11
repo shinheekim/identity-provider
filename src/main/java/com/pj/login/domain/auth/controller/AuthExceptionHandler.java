@@ -4,6 +4,7 @@ import com.pj.login.common.response.ApiResult;
 import com.pj.login.domain.auth.exception.AuthLoginException;
 import com.pj.login.domain.auth.exception.DuplicateEmailException;
 import com.pj.login.domain.auth.exception.DuplicateLoginIdException;
+import com.pj.login.domain.auth.exception.InvalidRefreshTokenException;
 import com.pj.login.domain.auth.exception.LoginNotAllowedException;
 import com.pj.login.domain.auth.exception.PasswordLockedException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -44,6 +45,12 @@ public class AuthExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResult<Void> handleAuthLoginFailure(AuthLoginException ex) {
         return ApiResult.error("INVALID_LOGIN_CREDENTIALS", "로그인 ID 또는 비밀번호가 올바르지 않습니다.");
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ApiResult<Void> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
+        return ApiResult.error("INVALID_REFRESH_TOKEN", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

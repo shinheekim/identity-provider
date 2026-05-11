@@ -12,6 +12,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -28,6 +29,26 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
     public void save(String refreshToken, UUID userUuid, Duration ttl) {
         stringRedisTemplate.opsForValue()
                 .set(refreshTokenKey(refreshToken), userUuid.toString(), ttl);
+    }
+
+    @Override
+    public Optional<UUID> consumeUserUuid(String refreshToken) {
+        String userUuid = stringRedisTemplate.opsForValue()
+                // getAndDelete로 기존 refresh token을 소비해서 재사용 방지
+                .getAndDelete(refreshTokenKey(refreshToken));
+        if (userUuid == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(UUID.fromString(userUuid));
+        } catch (IllegalArgumentException ex) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public void delete(String refreshToken) {
+        stringRedisTemplate.delete(refreshTokenKey(refreshToken));
     }
 
     private String refreshTokenKey(String refreshToken) {
