@@ -1,6 +1,5 @@
 package com.pj.login.domain.auth.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -14,8 +13,7 @@ public record LoginResponse(
         @Schema(description = "액세스 토큰")
         String accessToken,
 
-        @JsonInclude(JsonInclude.Include.ALWAYS)
-        @Schema(description = "Refresh Token (현재 미발급으로 null 반환)", nullable = true)
+        @Schema(description = "Refresh Token")
         String refreshToken,
 
         @Schema(description = "계정 상태", example = "ACTIVE")

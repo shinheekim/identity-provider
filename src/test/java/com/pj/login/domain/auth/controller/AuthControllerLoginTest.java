@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pj.login.common.security.refresh.RefreshTokenStore;
 import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.PasswordAlgo;
@@ -16,6 +17,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,7 +27,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,8 +58,8 @@ class AuthControllerLoginTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 시 액세스 토큰을 반환한다")
-    void login_success_returns_access_token() throws Exception {
+    @DisplayName("로그인 성공 시 액세스 토큰과 리프레시 토큰을 반환한다")
+    void login_success_returns_access_and_refresh_token() throws Exception {
         seedUser("controller-login@example.com");
 
         LoginRequest request = new LoginRequest("controller-login@example.com", "Password123!");
@@ -68,7 +71,7 @@ class AuthControllerLoginTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.userUuid").isNotEmpty())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.refreshToken").value(nullValue()))
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresAt").doesNotExist())
                 .andExpect(jsonPath("$.data.loginAt").doesNotExist());
@@ -151,5 +154,16 @@ class AuthControllerLoginTest {
         identity.addPassword(password);
         user.addIdentity(identity);
         userRepository.save(user);
+    }
+
+    @TestConfiguration
+    static class RefreshTokenStoreTestConfig {
+
+        @Bean
+        @Primary
+        RefreshTokenStore refreshTokenStore() {
+            return (refreshToken, userUuid, ttl) -> {
+            };
+        }
     }
 }
