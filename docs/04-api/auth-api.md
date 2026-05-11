@@ -41,7 +41,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 | 로그인 | POST   | `/api/v1/auth/login` | 일반 로그인 및 JWT 발급     |
 | 소셜 로그인 | POST   | `/api/v1/auth/social/login` | 소셜 로그인 처리 및 JWT 발급  |
 | 로그아웃 | POST   | `/api/v1/auth/logout` | Refresh Token 무효화   |
-| 토큰 재발급 | POST   | `/api/v1/auth/token/refresh` | Access Token 재발급    |
+| 토큰 재발급 | POST   | `/api/v1/auth/token/refresh` | Access/Refresh Token 재발급 |
 | 토큰 검증 | GET    | `/api/v1/auth/token/verify` | Access Token 유효성 확인 |
 | 이메일 인증 번호 발송 | POST   | `/api/v1/auth/email/send` | 이메일 인증 번호 발송 (개발고려) |
 | 이메일 인증 확인  | POST   | `/api/v1/auth/email/verify` | 이메일 인증 확인 (개발 고려)   |
@@ -488,8 +488,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 ### 5.5 토큰 재발급
 
 ### 개요
-Refresh Token을 이용하여 새로운 Access Token을 발급한다.  
-필요 시 Refresh Token도 함께 재발급할 수 있다.
+Refresh Token을 이용하여 새로운 Access Token과 Refresh Token을 발급한다.
 
 ---
 
@@ -548,7 +547,7 @@ Refresh Token을 이용하여 새로운 Access Token을 발급한다.
   "data": {
     "accessToken": "new-access-token",
     "refreshToken": "new-refresh-token",
-    "expiresIn": 3600
+    "expiresIn": 1800
   }
 }
 ```
