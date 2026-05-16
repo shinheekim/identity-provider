@@ -8,9 +8,9 @@ spring:
     driver-class-name: org.postgresql.Driver
   data:
     redis:
-      host: localhost
-      port: 6380
-      timeout: 2s
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      timeout: ${REDIS_TIMEOUT:2s}
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -33,4 +33,5 @@ app:
   jwt:
     issuer: taesin
     access-token-expiry-seconds: 1800
+    refresh-token-expiry-seconds: ${JWT_REFRESH_TOKEN_EXPIRY_SECONDS:1209600}
     secret: ${JWT_SECRET}

@@ -18,4 +18,5 @@ app:
   jwt:
     issuer: taesin
     access-token-expiry-seconds: 1800
+    refresh-token-expiry-seconds: 1209600
     secret: test-only-jwt-secret-key-change-me-1234567890-abcdef

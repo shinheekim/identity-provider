@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.service;
 
 import com.pj.login.common.security.JwtTokenService;
+import com.pj.login.common.security.refresh.RefreshTokenService;
 import com.pj.login.common.time.KoreaTime;
 import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
@@ -61,6 +62,9 @@ class AuthLoginServiceTest {
     private JwtTokenService jwtTokenService;
 
     @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
     private PasswordHashingService passwordHashingService;
 
     @Spy
@@ -104,7 +108,7 @@ class AuthLoginServiceTest {
             assertSoftly(softly -> {
                 softly.assertThat(response.userUuid()).isEqualTo(fixture.user().getUserUuid());
                 softly.assertThat(response.accessToken()).isEqualTo("access-token");
-                softly.assertThat(response.refreshToken()).isNull();
+                softly.assertThat(response.refreshToken()).isEqualTo("refresh-token");
                 softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
                 softly.assertThat(fixture.user().getLastLoginAt()).isEqualTo(issuedAt);
                 softly.assertThat(fixture.password().getFailCount()).isZero();
@@ -152,6 +156,7 @@ class AuthLoginServiceTest {
             });
 
             then(jwtTokenService).shouldHaveNoInteractions();
+            then(refreshTokenService).shouldHaveNoInteractions();
         }
 
         @Test
@@ -183,6 +188,7 @@ class AuthLoginServiceTest {
 
             then(passwordHashingService).shouldHaveNoInteractions();
             then(jwtTokenService).shouldHaveNoInteractions();
+            then(refreshTokenService).shouldHaveNoInteractions();
         }
 
         @Test
@@ -214,6 +220,7 @@ class AuthLoginServiceTest {
 
             then(passwordHashingService).shouldHaveNoInteractions();
             then(jwtTokenService).shouldHaveNoInteractions();
+            then(refreshTokenService).shouldHaveNoInteractions();
         }
 
         @Test
@@ -240,6 +247,7 @@ class AuthLoginServiceTest {
                 softly.assertThat(response.userUuid()).isEqualTo(fixture.user().getUserUuid());
                 softly.assertThat(response.accountStatus()).isEqualTo(AccountStatus.ACTIVE);
                 softly.assertThat(response.accessToken()).isEqualTo("access-token");
+                softly.assertThat(response.refreshToken()).isEqualTo("refresh-token");
                 softly.assertThat(loginHistory.getLoginId()).isEqualTo("tester01");
                 softly.assertThat(loginHistory.getAttemptResult()).isEqualTo(LoginAttemptResult.SUCCESS);
             });
@@ -256,6 +264,11 @@ class AuthLoginServiceTest {
                 .willAnswer(invocation -> {
                     LocalDateTime issuedAt = invocation.getArgument(1);
                     return new JwtTokenService.JwtToken("access-token", issuedAt.plusSeconds(3600));
+                });
+        given(refreshTokenService.issueRefreshToken(eq(user.getUserUuid()), any(LocalDateTime.class)))
+                .willAnswer(invocation -> {
+                    LocalDateTime issuedAt = invocation.getArgument(1);
+                    return new RefreshTokenService.RefreshToken("refresh-token", issuedAt.plusDays(14));
                 });
     }
 

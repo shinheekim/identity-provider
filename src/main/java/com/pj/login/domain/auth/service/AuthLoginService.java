@@ -1,6 +1,7 @@
 package com.pj.login.domain.auth.service;
 
 import com.pj.login.common.security.JwtTokenService;
+import com.pj.login.common.security.refresh.RefreshTokenService;
 import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.LoginFailureReason;
@@ -37,6 +38,7 @@ public class AuthLoginService {
     private final IdentityRepository identityRepository;
     private final LoginHistoryRepository loginHistoryRepository;
     private final JwtTokenService jwtTokenService;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordHashingService passwordHashingService;
     private final TimeProvider timeProvider;
 
@@ -128,11 +130,13 @@ public class AuthLoginService {
 
         JwtTokenService.JwtToken accessToken =
                 jwtTokenService.issueAccessToken(user.getUserUuid(), loginContext.attemptedAt());
+        RefreshTokenService.RefreshToken refreshToken =
+                refreshTokenService.issueRefreshToken(user.getUserUuid(), loginContext.attemptedAt());
 
         return new LoginResponse(
                 user.getUserUuid(),
                 accessToken.token(),
-                null,
+                refreshToken.token(),
                 user.getAccountStatus()
         );
     }

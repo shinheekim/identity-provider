@@ -1,6 +1,8 @@
 package com.pj.login.domain.auth.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pj.login.common.security.refresh.RefreshTokenStore;
 import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.PasswordAlgo;
@@ -16,14 +18,24 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.hamcrest.Matchers.nullValue;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,8 +67,8 @@ class AuthControllerLoginTest {
     }
 
     @Test
-    @DisplayName("로그인 성공 시 액세스 토큰을 반환한다")
-    void login_success_returns_access_token() throws Exception {
+    @DisplayName("로그인 성공 시 액세스 토큰과 리프레시 토큰을 반환한다")
+    void login_success_returns_access_and_refresh_token() throws Exception {
         seedUser("controller-login@example.com");
 
         LoginRequest request = new LoginRequest("controller-login@example.com", "Password123!");
@@ -68,7 +80,7 @@ class AuthControllerLoginTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.userUuid").isNotEmpty())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.refreshToken").value(nullValue()))
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessTokenExpiresAt").doesNotExist())
                 .andExpect(jsonPath("$.data.loginAt").doesNotExist());
@@ -120,6 +132,64 @@ class AuthControllerLoginTest {
                 .andExpect(jsonPath("$.error.message").value("로그인 ID는 필수입니다."));
     }
 
+    @Test
+    @DisplayName("리프레시 토큰으로 액세스 토큰과 리프레시 토큰을 재발급한다")
+    void refresh_token_success_rotates_refresh_token() throws Exception {
+        seedUser("refresh-controller@example.com");
+        LoginRequest loginRequest = new LoginRequest("refresh-controller@example.com", "Password123!");
+
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String oldRefreshToken = readData(loginResult, "refreshToken").asText();
+
+        MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", oldRefreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.expiresIn").value(1800))
+                .andReturn();
+
+        String newRefreshToken = readData(refreshResult, "refreshToken").asText();
+        assertThat(newRefreshToken).isNotEqualTo(oldRefreshToken);
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", oldRefreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 리프레시 토큰이면 401을 반환한다")
+    void refresh_token_invalid_returns_unauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", "invalid-refresh-token"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"))
+                .andExpect(jsonPath("$.error.message").value("Refresh Token이 유효하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 누락 시 검증 에러를 반환한다")
+    void refresh_token_missing_returns_validation_error() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.error.message").value("Refresh Token은 필수입니다."));
+    }
+
     private void seedUser(String loginId) {
         seedUser(loginId, AccountStatus.ACTIVE);
     }
@@ -151,5 +221,41 @@ class AuthControllerLoginTest {
         identity.addPassword(password);
         user.addIdentity(identity);
         userRepository.save(user);
+    }
+
+    private JsonNode readData(MvcResult result, String fieldName) throws Exception {
+        return objectMapper.readTree(result.getResponse().getContentAsString())
+                .path("data")
+                .path(fieldName);
+    }
+
+    @TestConfiguration
+    static class RefreshTokenStoreTestConfig {
+
+        @Bean
+        @Primary
+        RefreshTokenStore refreshTokenStore() {
+            return new InMemoryRefreshTokenStore();
+        }
+
+        static class InMemoryRefreshTokenStore implements RefreshTokenStore {
+
+            private final Map<String, UUID> tokens = new ConcurrentHashMap<>();
+
+            @Override
+            public void save(String refreshToken, UUID userUuid, Duration ttl) {
+                tokens.put(refreshToken, userUuid);
+            }
+
+            @Override
+            public Optional<UUID> consumeUserUuid(String refreshToken) {
+                return Optional.ofNullable(tokens.remove(refreshToken));
+            }
+
+            @Override
+            public void delete(String refreshToken) {
+                tokens.remove(refreshToken);
+            }
+        }
     }
 }
