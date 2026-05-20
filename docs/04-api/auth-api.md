@@ -526,6 +526,11 @@ Refresh Token을 이용하여 새로운 Access Token과 Refresh Token을 발급�
 - 새로운 Access Token 발급
 - 필요 시 Refresh Token 재발급
 
+관련 문서
+- 토큰 필드 의미와 기본 사용 규칙은 [인증 토큰 모델](../02-architecture/auth-token-model.md) 문서를 따른다.
+- Refresh Token rotation 흐름은 [Refresh Token Rotation](../02-architecture/refresh-token-rotation.md) 문서를 따른다.
+- 설계 결정 배경은 [ADR-005 Refresh Token Rotation / Token Family](../07-decisions/ADR/ADR-005-refresh-token-rotation.md) 문서를 따른다.
+
 ---
 
 ### 응답
