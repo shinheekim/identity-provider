@@ -16,6 +16,7 @@
 - [002-user-identity](./ADR/ADR-002-user-identity.md)
 - [003-예외-로그](./ADR/ADR-003-예외-로그.md)
 - [004-타임존](./ADR/ADR-004-타임존.md)
+- [005-refresh-token-rotation](./ADR/ADR-005-refresh-token-rotation.md)
 
 
 
@@ -43,4 +44,3 @@
 ## 영향
 이 결정으로 인해 바뀌는 것
 ```
-
