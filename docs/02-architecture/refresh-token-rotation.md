@@ -47,6 +47,7 @@ Refresh Token rotation 설계의 목표는 다음과 같다.
 - 하나의 family 안에는 여러 세대의 Refresh Token이 존재할 수 있다
 - 현재 유효한 토큰은 하나만 `ACTIVE` 상태를 가진다
 - 재사용 감지 시 family 전체를 폐기할 수 있다
+- familyid는 UUID로 구성한다.
 
 ---
 
