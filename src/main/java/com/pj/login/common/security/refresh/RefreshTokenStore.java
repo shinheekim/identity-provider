@@ -6,9 +6,13 @@ import java.util.UUID;
 
 public interface RefreshTokenStore {
 
-    void save(String refreshToken, UUID userUuid, Duration ttl);
+    void save(String refreshToken, UUID userUuid, UUID familyId, Duration ttl);
 
-    Optional<UUID> consumeUserUuid(String refreshToken);
+    Optional<StoredRefreshToken> find(String refreshToken);
+
+    Optional<StoredRefreshToken> rotate(String currentRefreshToken, String nextRefreshToken, Duration ttl);
 
     void delete(String refreshToken);
+
+    void revokeFamily(UUID familyId);
 }
