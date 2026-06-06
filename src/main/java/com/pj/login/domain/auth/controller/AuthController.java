@@ -3,11 +3,14 @@ package com.pj.login.domain.auth.controller;
 import com.pj.login.common.response.ApiResult;
 import com.pj.login.domain.auth.dto.LoginRequest;
 import com.pj.login.domain.auth.dto.LoginResponse;
+import com.pj.login.domain.auth.dto.LogoutRequest;
+import com.pj.login.domain.auth.dto.LogoutResponse;
 import com.pj.login.domain.auth.dto.SignupRequest;
 import com.pj.login.domain.auth.dto.SignupResponse;
 import com.pj.login.domain.auth.dto.TokenRefreshRequest;
 import com.pj.login.domain.auth.dto.TokenRefreshResponse;
 import com.pj.login.domain.auth.service.AuthLoginService;
+import com.pj.login.domain.auth.service.AuthLogoutService;
 import com.pj.login.domain.auth.service.AuthSignupService;
 import com.pj.login.domain.auth.service.AuthTokenRefreshService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +33,7 @@ public class AuthController {
 
     private final AuthLoginService authLoginService;
     private final AuthSignupService authSignupService;
+    private final AuthLogoutService authLogoutService;
     private final AuthTokenRefreshService authTokenRefreshService;
 
     @Operation(summary = "로그인", description = "로컬 계정 로그인 처리를 수행합니다.")
@@ -59,6 +63,17 @@ public class AuthController {
     @PostMapping("/signup")
     public ApiResult<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
         return ApiResult.success(authSignupService.signup(request));
+    }
+
+    @Operation(summary = "로그아웃", description = "현재 인증 상태를 종료하고 Refresh Token을 무효화합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "400", description = "요청 값 오류"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 요청")
+    })
+    @PostMapping("/logout")
+    public ApiResult<LogoutResponse> logout(@Valid @RequestBody LogoutRequest request) {
+        return ApiResult.success(authLogoutService.logout(request));
     }
 
     @Operation(summary = "토큰 재발급", description = "Refresh Token을 이용해 Access Token과 Refresh Token을 재발급합니다.")
