@@ -460,6 +460,8 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - Refresh Token 유효성 검증
 - Refresh Token 무효화 처리
 - 재발급 차단
+- 이미 만료되었거나 저장소에 없는 Refresh Token이어도 로그아웃 요청은 성공으로 처리한다
+- Access Token 블랙리스트는 현재 정책 범위에 포함하지 않으며, Access Token은 만료 시점까지 유효할 수 있다
 
 ---
 
