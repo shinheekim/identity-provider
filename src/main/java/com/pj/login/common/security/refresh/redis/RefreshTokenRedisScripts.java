@@ -57,11 +57,23 @@ final class RefreshTokenRedisScripts {
             return {'ACTIVE', userUuid, familyId}
             """, List.class);
 
+    static final RedisScript<Long> DELETE = RedisScript.of("""
+            local familyId = redis.call('HGET', KEYS[1], 'familyId')
+            if familyId then
+                redis.call('SREM', ARGV[1] .. familyId .. ARGV[2], KEYS[1])
+            end
+            return redis.call('DEL', KEYS[1])
+            """, Long.class);
+
     static final RedisScript<Long> REVOKE_FAMILY = RedisScript.of("""
             redis.call('HSET', KEYS[1], 'status', 'REVOKED')
             local tokenKeys = redis.call('SMEMBERS', KEYS[2])
             for _, tokenKey in ipairs(tokenKeys) do
-                redis.call('HSET', tokenKey, 'status', 'REVOKED')
+                if redis.call('EXISTS', tokenKey) == 1 then
+                    redis.call('HSET', tokenKey, 'status', 'REVOKED')
+                else
+                    redis.call('SREM', KEYS[2], tokenKey)
+                end
             end
             return 1
             """, Long.class);

@@ -77,7 +77,12 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
 
     @Override
     public void delete(String refreshToken) {
-        stringRedisTemplate.delete(refreshTokenKey(refreshToken));
+        stringRedisTemplate.execute(
+                RefreshTokenRedisScripts.DELETE,
+                List.of(refreshTokenKey(refreshToken)),
+                FAMILY_KEY_PREFIX,
+                FAMILY_TOKENS_KEY_SUFFIX
+        );
     }
 
     @Override

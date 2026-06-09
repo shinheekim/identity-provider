@@ -165,12 +165,27 @@ class RedisRefreshTokenStoreTest {
     void delete_by_hmac_digest_key() throws Exception {
         JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);
         RedisRefreshTokenStore refreshTokenStore = new RedisRefreshTokenStore(stringRedisTemplate, jwtProperties);
-        ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<RedisScript> scriptCaptor = ArgumentCaptor.forClass(RedisScript.class);
+        ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(List.class);
 
         refreshTokenStore.delete(RAW_REFRESH_TOKEN);
 
-        then(stringRedisTemplate).should().delete(keyCaptor.capture());
-        assertThat(keyCaptor.getValue()).isEqualTo("auth:rt:v2:token:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET));
+        then(stringRedisTemplate).should()
+                .execute(scriptCaptor.capture(), keysCaptor.capture(), eq("auth:rt:v2:family:"), eq(":tokens"));
+        assertThat(scriptCaptor.getValue()).isSameAs(RefreshTokenRedisScripts.DELETE);
+        assertThat(keysCaptor.getValue()).containsExactly(
+                "auth:rt:v2:token:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET)
+        );
+    }
+
+    @Test
+    @DisplayName("delete 스크립트는 token hash 삭제와 family tokens set 정리를 함께 수행한다")
+    void delete_script_removes_token_from_family_tokens_set() {
+        String deleteScript = RefreshTokenRedisScripts.DELETE.getScriptAsString();
+
+        assertThat(deleteScript).contains("redis.call('HGET', KEYS[1], 'familyId')");
+        assertThat(deleteScript).contains("redis.call('SREM', ARGV[1] .. familyId .. ARGV[2], KEYS[1])");
+        assertThat(deleteScript).contains("redis.call('DEL', KEYS[1])");
     }
 
     @Test
@@ -189,6 +204,16 @@ class RedisRefreshTokenStoreTest {
                 "auth:rt:v2:family:" + familyId,
                 "auth:rt:v2:family:" + familyId + ":tokens"
         );
+    }
+
+    @Test
+    @DisplayName("family 폐기 스크립트는 존재하지 않는 token hash를 재생성하지 않고 set에서 제거한다")
+    void revoke_family_script_does_not_recreate_missing_token_hash() {
+        String revokeFamilyScript = RefreshTokenRedisScripts.REVOKE_FAMILY.getScriptAsString();
+
+        assertThat(revokeFamilyScript).contains("redis.call('EXISTS', tokenKey) == 1");
+        assertThat(revokeFamilyScript).contains("redis.call('HSET', tokenKey, 'status', 'REVOKED')");
+        assertThat(revokeFamilyScript).contains("redis.call('SREM', KEYS[2], tokenKey)");
     }
 
     private String hmacSha256(String value, String secret) throws Exception {
