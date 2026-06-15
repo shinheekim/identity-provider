@@ -234,6 +234,47 @@ class AuthControllerLoginTest {
     }
 
     @Test
+    @DisplayName("로그아웃 시 Access Token 사용자와 Refresh Token 소유자가 다르면 토큰을 유지한다")
+    void logout_keeps_refresh_token_when_owner_mismatches() throws Exception {
+        seedUser("logout-owner-a@example.com");
+        seedUser("logout-owner-b@example.com");
+
+        MvcResult userALoginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("logout-owner-a@example.com", "Password123!")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn();
+        MvcResult userBLoginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new LoginRequest("logout-owner-b@example.com", "Password123!")
+                        )))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String userAAccessToken = readData(userALoginResult, "accessToken").asText();
+        String userBRefreshToken = readData(userBLoginResult, "refreshToken").asText();
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer " + userAAccessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", userBRefreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.message").value("로그아웃이 완료되었습니다."));
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", userBRefreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.data.refreshToken").isNotEmpty());
+    }
+
+    @Test
     @DisplayName("이미 없거나 만료된 Refresh Token으로 로그아웃해도 성공 응답을 반환한다")
     void logout_missing_refresh_token_is_idempotent() throws Exception {
         seedUser("logout-idempotent@example.com");
