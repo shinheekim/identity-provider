@@ -416,7 +416,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ### 개요
 현재 로그인한 사용자의 인증 상태를 종료한다.  
-기본적으로 Refresh Token을 무효화하여 이후 토큰 재발급을 차단한다.
+현재 인증 사용자 소유의 Refresh Token을 무효화하여 이후 토큰 재발급을 차단한다.
 
 ---
 
@@ -440,7 +440,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| refreshToken | String | Y | 무효화할 Refresh Token |
+| refreshToken | String | Y | 현재 인증 사용자 소유일 때 무효화할 Refresh Token |
 
 ---
 
@@ -457,11 +457,20 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 ### 처리 로직 (설계 기준)
 
 - Access Token 기반 사용자 식별
-- Refresh Token 유효성 검증
-- Refresh Token 무효화 처리
-- 재발급 차단
+- Refresh Token 저장소에서 토큰에 매핑된 사용자 UUID 조회
+- Access Token subject의 사용자 UUID와 Refresh Token 소유자 UUID 비교
+- 두 사용자 UUID가 일치하는 경우에만 Refresh Token 무효화 처리
+- 무효화된 Refresh Token은 이후 재발급에 사용할 수 없다
 - 이미 만료되었거나 저장소에 없는 Refresh Token이어도 로그아웃 요청은 성공으로 처리한다
+- Refresh Token 소유자가 현재 인증 사용자와 달라도 로그아웃 요청은 성공으로 처리하되, 실제 삭제는 수행하지 않는다
 - Access Token 블랙리스트는 현재 정책 범위에 포함하지 않으며, Access Token은 만료 시점까지 유효할 수 있다
+
+### 보안 고려사항
+
+- 소유자가 다른 Refresh Token을 삭제하지 않는 정책은 다른 사용자의 Refresh Token을 이용한 강제 로그아웃을 막기 위한 기본 방어이다
+- 다만 요청자가 다른 사용자의 Refresh Token 원문을 알고 있다는 것은 Refresh Token 탈취 가능성을 의미할 수 있다
+- 소유자 불일치 이벤트는 감사 로그, 이상 징후 모니터링, 계정 보호 조치, Token Family 또는 사용자 세션 전체 무효화 정책과 함께 별도로 검토한다
+- 탈취로 판단할 충분한 신호가 있는 경우에는 단순 로그아웃 정책이 아니라 보안 사고 대응 정책에 따라 해당 Refresh Token 또는 세션을 폐기할 수 있다
 
 ---
 
@@ -817,8 +826,10 @@ Access Token의 유효성을 검증한다.
 ### 6.3 로그아웃 흐름
 
 1. 사용자가 로그아웃 요청을 보낸다
-2. 서버가 Refresh Token을 무효화한다
-3. 이후 해당 Refresh Token으로 재발급할 수 없게 한다
+2. 서버가 Access Token subject와 Refresh Token 소유자를 비교한다
+3. 소유자가 일치하면 Refresh Token을 무효화한다
+4. 소유자가 다르거나 토큰이 없으면 성공 응답은 유지하되 실제 삭제는 수행하지 않는다
+5. 무효화된 Refresh Token은 이후 재발급할 수 없게 한다
 
 ---
 
