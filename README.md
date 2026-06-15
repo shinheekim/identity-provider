@@ -143,5 +143,5 @@ docker run --rm -p 8080:8080 \
 - 인증 서버는 독립 서비스로 구성합니다.
 - 인증 처리는 Stateless 구조를 기본으로 합니다.
 - Access Token에는 민감 정보를 포함하지 않습니다.
-- Refresh Token은 서버 측 저장소를 통해 관리합니다.
+- Refresh Token은 서버 측 저장소에서 Token Family와 상태값 기반으로 관리합니다.
 - 비밀번호는 평문으로 저장하지 않고 암호화하여 저장합니다.

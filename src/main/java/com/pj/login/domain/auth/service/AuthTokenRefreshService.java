@@ -30,7 +30,7 @@ public class AuthTokenRefreshService {
     private final JwtProperties jwtProperties;
 
     public TokenRefreshResponse refresh(TokenRefreshRequest request) {
-        UUID userUuid = refreshTokenService.consumeUserUuid(request.refreshToken())
+        UUID userUuid = refreshTokenService.findActiveUserUuid(request.refreshToken())
                 .orElseThrow(InvalidRefreshTokenException::new);
         User user = userRepository.findByUserUuid(userUuid)
                 .orElseThrow(InvalidRefreshTokenException::new);
@@ -39,7 +39,8 @@ public class AuthTokenRefreshService {
         LocalDateTime issuedAt = timeProvider.now();
         JwtTokenService.JwtToken accessToken = jwtTokenService.issueAccessToken(user.getUserUuid(), issuedAt);
         RefreshTokenService.RefreshToken refreshToken =
-                refreshTokenService.issueRefreshToken(user.getUserUuid(), issuedAt);
+                refreshTokenService.rotateRefreshToken(request.refreshToken(), issuedAt)
+                        .orElseThrow(InvalidRefreshTokenException::new);
 
         return new TokenRefreshResponse(
                 accessToken.token(),

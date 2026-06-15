@@ -48,6 +48,8 @@ Refresh Token rotation 설계의 목표는 다음과 같다.
 - 현재 유효한 토큰은 하나만 `ACTIVE` 상태를 가진다
 - 재사용 감지 시 family 전체를 폐기할 수 있다
 - familyid는 UUID로 구성한다.
+- 로그인 시 최초 Refresh Token과 함께 새 family를 생성한다
+- 재발급 시 새 Refresh Token은 기존 토큰과 같은 family에 속한다
 
 ---
 
@@ -66,14 +68,14 @@ Refresh Token은 우선 아래 상태를 사용한다.
 ## 5. 저장 예시
 
 ```text
-RT:A = {
+auth:rt:v2:token:{TokenKey(A)} = {
   userUuid: "user1",
   familyId: "family1",
   status: "ROTATED",
   rotatedTo: "TokenKey(B)"
 }
 
-RT:B = {
+auth:rt:v2:token:{TokenKey(B)} = {
   userUuid: "user1",
   familyId: "family1",
   status: "ACTIVE"
@@ -83,11 +85,18 @@ RT:B = {
 family 기준 포인터 예시
 
 ```text
-RTF:family1 = {
+auth:rt:v2:family:{family1} = {
   currentToken: "TokenKey(B)",
   status: "ACTIVE"
 }
+
+auth:rt:v2:family:{family1}:tokens = [
+  "TokenKey(A)",
+  "TokenKey(B)"
+]
 ```
+
+`TokenKey`는 Refresh Token 원문이 아니라 HMAC-SHA256 digest 기반 Redis key를 사용한다.
 
 ---
 
@@ -97,7 +106,7 @@ RTF:family1 = {
 2. 서버가 `RT:A`를 조회
 3. `status == ACTIVE` 확인
 4. 새 Refresh Token `B`와 새 Access Token 발급 정보를 준비
-5. Redis Lua Script 또는 Transaction으로 원자 작업 수행
+5. Redis Lua Script로 원자 작업 수행
 6. `RT:A`가 여전히 `ACTIVE`인지 다시 검증
 7. `RT:A.status = ROTATED`
 8. `RT:A.rotatedTo = TokenKey(B)` 저장
@@ -149,12 +158,21 @@ RTF:family1 = {
 
 ---
 
-## 10. 문서 범위
+## 10. 구현 범위
 
-이 문서는 목표 구조와 동작 흐름을 설명한다.  
-실제 구현 여부와 시점은 PR 범위에 따라 달라질 수 있다.
+현재 구현은 아래 범위를 포함한다.
 
-현재/후속 PR 범위와 대안 비교는 ADR 문서를 기준으로 본다.
+- 로그인 시 Refresh Token family 생성
+- Refresh Token 상태값 `ACTIVE`, `ROTATED`, `REVOKED` 저장
+- 재발급 시 Redis Lua Script 기반 원자 rotation
+- HMAC digest 기반 Refresh Token key 저장
+- `ROTATED` 토큰 재사용 감지 시 family 단위 폐기
+
+아래 항목은 후속 설계에서 확장할 수 있다.
+
+- 재사용 감지 이벤트 로깅
+- 기기별 세션 관리
+- family 단위 로그아웃 정책 세분화
 
 ---
 
