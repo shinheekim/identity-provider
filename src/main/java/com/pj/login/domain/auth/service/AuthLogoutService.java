@@ -6,6 +6,8 @@ import com.pj.login.domain.auth.dto.LogoutResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class AuthLogoutService {
@@ -14,8 +16,10 @@ public class AuthLogoutService {
 
     private final RefreshTokenService refreshTokenService;
 
-    public LogoutResponse logout(LogoutRequest request) {
-        refreshTokenService.revokeRefreshToken(request.refreshToken());
+    public LogoutResponse logout(LogoutRequest request, UUID authenticatedUserUuid) {
+        refreshTokenService.findUserUuid(request.refreshToken())
+                .filter(authenticatedUserUuid::equals)
+                .ifPresent(userUuid -> refreshTokenService.revokeRefreshToken(request.refreshToken()));
         return new LogoutResponse(LOGOUT_MESSAGE);
     }
 }

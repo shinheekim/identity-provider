@@ -42,6 +42,11 @@ public class RefreshTokenService {
                 .map(StoredRefreshToken::userUuid);
     }
 
+    public Optional<UUID> findUserUuid(String refreshToken) {
+        return refreshTokenStore.find(refreshToken)
+                .map(StoredRefreshToken::userUuid);
+    }
+
     public Optional<RefreshToken> rotateRefreshToken(String currentRefreshToken, LocalDateTime issuedAt) {
         String nextRefreshToken = generateToken();
         Duration ttl = Duration.ofSeconds(jwtProperties.refreshTokenExpirySeconds());

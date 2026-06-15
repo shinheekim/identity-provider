@@ -20,10 +20,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -65,15 +69,18 @@ public class AuthController {
         return ApiResult.success(authSignupService.signup(request));
     }
 
-    @Operation(summary = "로그아웃", description = "현재 인증 상태를 종료하고 Refresh Token을 무효화합니다.")
+    @Operation(summary = "로그아웃", description = "현재 인증 상태를 종료하고 현재 인증 사용자 소유의 Refresh Token을 무효화합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "400", description = "요청 값 오류"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 요청")
     })
     @PostMapping("/logout")
-    public ApiResult<LogoutResponse> logout(@Valid @RequestBody LogoutRequest request) {
-        return ApiResult.success(authLogoutService.logout(request));
+    public ApiResult<LogoutResponse> logout(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody LogoutRequest request
+    ) {
+        return ApiResult.success(authLogoutService.logout(request, UUID.fromString(jwt.getSubject())));
     }
 
     @Operation(summary = "토큰 재발급", description = "Refresh Token을 이용해 Access Token과 Refresh Token을 재발급합니다.")
