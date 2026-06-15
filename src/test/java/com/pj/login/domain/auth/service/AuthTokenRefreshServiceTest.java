@@ -60,30 +60,30 @@ class AuthTokenRefreshServiceTest {
     private AuthTokenRefreshService authTokenRefreshService;
 
     @Test
-    @DisplayName("유효한 리프레시 토큰이면 기존 토큰을 폐기하고 새 토큰들을 발급한다")
+    @DisplayName("유효한 리프레시 토큰이면 같은 family 안에서 토큰들을 재발급한다")
     void refresh_rotates_refresh_token_and_issues_tokens() {
         User user = activeUser();
         UUID userUuid = user.getUserUuid();
-        given(refreshTokenService.consumeUserUuid("old-refresh-token")).willReturn(Optional.of(userUuid));
+        given(refreshTokenService.findActiveUserUuid("old-refresh-token")).willReturn(Optional.of(userUuid));
         given(userRepository.findByUserUuid(userUuid)).willReturn(Optional.of(user));
         given(jwtTokenService.issueAccessToken(eq(userUuid), any(LocalDateTime.class)))
                 .willAnswer(invocation -> {
                     LocalDateTime issuedAt = invocation.getArgument(1);
                     return new JwtTokenService.JwtToken("new-access-token", issuedAt.plusSeconds(1800));
                 });
-        given(refreshTokenService.issueRefreshToken(eq(userUuid), any(LocalDateTime.class)))
+        given(refreshTokenService.rotateRefreshToken(eq("old-refresh-token"), any(LocalDateTime.class)))
                 .willAnswer(invocation -> {
                     LocalDateTime issuedAt = invocation.getArgument(1);
-                    return new RefreshTokenService.RefreshToken("new-refresh-token", issuedAt.plusDays(14));
+                    return Optional.of(new RefreshTokenService.RefreshToken("new-refresh-token", issuedAt.plusDays(14)));
                 });
 
         TokenRefreshResponse response =
                 authTokenRefreshService.refresh(new TokenRefreshRequest("old-refresh-token"));
 
         InOrder inOrder = inOrder(refreshTokenService, jwtTokenService);
-        inOrder.verify(refreshTokenService).consumeUserUuid("old-refresh-token");
+        inOrder.verify(refreshTokenService).findActiveUserUuid("old-refresh-token");
         inOrder.verify(jwtTokenService).issueAccessToken(eq(userUuid), any(LocalDateTime.class));
-        inOrder.verify(refreshTokenService).issueRefreshToken(eq(userUuid), any(LocalDateTime.class));
+        inOrder.verify(refreshTokenService).rotateRefreshToken(eq("old-refresh-token"), any(LocalDateTime.class));
 
         assertSoftly(softly -> {
             softly.assertThat(response.accessToken()).isEqualTo("new-access-token");
@@ -95,7 +95,7 @@ class AuthTokenRefreshServiceTest {
     @Test
     @DisplayName("저장소에 없는 리프레시 토큰이면 예외를 던진다")
     void refresh_invalid_token() {
-        given(refreshTokenService.consumeUserUuid("invalid-refresh-token")).willReturn(Optional.empty());
+        given(refreshTokenService.findActiveUserUuid("invalid-refresh-token")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> authTokenRefreshService.refresh(new TokenRefreshRequest("invalid-refresh-token")))
                 .isInstanceOf(InvalidRefreshTokenException.class);
@@ -114,7 +114,7 @@ class AuthTokenRefreshServiceTest {
                 .phoneVerified(false)
                 .build();
         UUID userUuid = user.getUserUuid();
-        given(refreshTokenService.consumeUserUuid("refresh-token")).willReturn(Optional.of(userUuid));
+        given(refreshTokenService.findActiveUserUuid("refresh-token")).willReturn(Optional.of(userUuid));
         given(userRepository.findByUserUuid(userUuid)).willReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authTokenRefreshService.refresh(new TokenRefreshRequest("refresh-token")))

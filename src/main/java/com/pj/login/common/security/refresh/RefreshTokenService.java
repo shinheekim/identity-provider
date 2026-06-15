@@ -23,15 +23,31 @@ public class RefreshTokenService {
 
     public RefreshToken issueRefreshToken(UUID userUuid, LocalDateTime issuedAt) {
         String token = generateToken();
+        UUID familyId = UUID.randomUUID();
         Duration ttl = Duration.ofSeconds(jwtProperties.refreshTokenExpirySeconds());
 
-        refreshTokenStore.save(token, userUuid, ttl);
+        refreshTokenStore.save(token, userUuid, familyId, ttl);
 
         return new RefreshToken(token, issuedAt.plus(ttl));
     }
 
-    public Optional<UUID> consumeUserUuid(String refreshToken) {
-        return refreshTokenStore.consumeUserUuid(refreshToken);
+    public Optional<UUID> findActiveUserUuid(String refreshToken) {
+        Optional<StoredRefreshToken> storedRefreshToken = refreshTokenStore.find(refreshToken);
+        storedRefreshToken
+                .filter(StoredRefreshToken::isRotated)
+                .ifPresent(token -> refreshTokenStore.revokeFamily(token.familyId()));
+
+        return storedRefreshToken
+                .filter(StoredRefreshToken::isActive)
+                .map(StoredRefreshToken::userUuid);
+    }
+
+    public Optional<RefreshToken> rotateRefreshToken(String currentRefreshToken, LocalDateTime issuedAt) {
+        String nextRefreshToken = generateToken();
+        Duration ttl = Duration.ofSeconds(jwtProperties.refreshTokenExpirySeconds());
+
+        return refreshTokenStore.rotate(currentRefreshToken, nextRefreshToken, ttl)
+                .map(rotatedToken -> new RefreshToken(nextRefreshToken, issuedAt.plus(ttl)));
     }
 
     public void revokeRefreshToken(String refreshToken) {

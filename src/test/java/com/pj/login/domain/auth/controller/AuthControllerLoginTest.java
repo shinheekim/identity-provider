@@ -3,6 +3,8 @@ package com.pj.login.domain.auth.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pj.login.common.security.refresh.RefreshTokenStore;
+import com.pj.login.common.security.refresh.RefreshTokenStatus;
+import com.pj.login.common.security.refresh.StoredRefreshToken;
 import com.pj.login.common.time.TimeProvider;
 import com.pj.login.domain.auth.constant.AccountStatus;
 import com.pj.login.domain.auth.constant.PasswordAlgo;
@@ -164,6 +166,13 @@ class AuthControllerLoginTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", newRefreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
     }
 
     @Test
@@ -240,21 +249,61 @@ class AuthControllerLoginTest {
 
         static class InMemoryRefreshTokenStore implements RefreshTokenStore {
 
-            private final Map<String, UUID> tokens = new ConcurrentHashMap<>();
+            private final Map<String, StoredRefreshToken> tokens = new ConcurrentHashMap<>();
 
             @Override
-            public void save(String refreshToken, UUID userUuid, Duration ttl) {
-                tokens.put(refreshToken, userUuid);
+            public void save(String refreshToken, UUID userUuid, UUID familyId, Duration ttl) {
+                tokens.put(refreshToken, new StoredRefreshToken(userUuid, familyId, RefreshTokenStatus.ACTIVE));
             }
 
             @Override
-            public Optional<UUID> consumeUserUuid(String refreshToken) {
-                return Optional.ofNullable(tokens.remove(refreshToken));
+            public Optional<StoredRefreshToken> find(String refreshToken) {
+                return Optional.ofNullable(tokens.get(refreshToken));
+            }
+
+            @Override
+            public Optional<StoredRefreshToken> rotate(String currentRefreshToken, String nextRefreshToken, Duration ttl) {
+                StoredRefreshToken currentToken = tokens.get(currentRefreshToken);
+                if (currentToken == null) {
+                    return Optional.empty();
+                }
+                if (currentToken.status() == RefreshTokenStatus.ROTATED) {
+                    revokeFamily(currentToken.familyId());
+                    return Optional.empty();
+                }
+                if (currentToken.status() != RefreshTokenStatus.ACTIVE) {
+                    return Optional.empty();
+                }
+                tokens.put(
+                        currentRefreshToken,
+                        new StoredRefreshToken(
+                                currentToken.userUuid(),
+                                currentToken.familyId(),
+                                RefreshTokenStatus.ROTATED
+                        )
+                );
+                StoredRefreshToken nextToken = new StoredRefreshToken(
+                        currentToken.userUuid(),
+                        currentToken.familyId(),
+                        RefreshTokenStatus.ACTIVE
+                );
+                tokens.put(nextRefreshToken, nextToken);
+                return Optional.of(nextToken);
             }
 
             @Override
             public void delete(String refreshToken) {
                 tokens.remove(refreshToken);
+            }
+
+            @Override
+            public void revokeFamily(UUID familyId) {
+                tokens.replaceAll((refreshToken, token) -> {
+                    if (token.familyId().equals(familyId)) {
+                        return new StoredRefreshToken(token.userUuid(), token.familyId(), RefreshTokenStatus.REVOKED);
+                    }
+                    return token;
+                });
             }
         }
     }

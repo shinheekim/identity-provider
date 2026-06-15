@@ -27,7 +27,8 @@ Refresh Token rotation 상세 흐름은 [Refresh Token Rotation](./refresh-token
 
 - Access Token이 만료되었을 때 재발급에 사용하는 토큰
 - Access Token보다 수명이 길다
-- 서버는 Refresh Token을 저장소에서 관리하며 재발급 정책에 따라 rotation 할 수 있다
+- 서버는 Refresh Token을 저장소에서 관리하며 재발급 시 rotation 한다
+- Refresh Token은 로그인 세션 단위 family에 속하며, family 안에서 현재 유효한 토큰은 하나만 `ACTIVE` 상태를 가진다
 - 재사용 감지, 세션 폐기, 로그아웃 정책과 연결된다
 
 ---
