@@ -36,43 +36,6 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("리프레시 토큰에 저장된 사용자 UUID를 조회한다")
-    void find_user_uuid_by_refresh_token() {
-        CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
-        RefreshTokenService refreshTokenService = new RefreshTokenService(
-                new JwtProperties("taesin", 1800, 1209600, TEST_SECRET),
-                refreshTokenStore
-        );
-        UUID userUuid = UUID.randomUUID();
-        refreshTokenStore.save("refresh-token", userUuid, UUID.randomUUID(), Duration.ofDays(14));
-
-        Optional<UUID> foundUserUuid = refreshTokenService.findUserUuid("refresh-token");
-
-        assertThat(foundUserUuid).contains(userUuid);
-    }
-
-    @Test
-    @DisplayName("리프레시 토큰 사용자 UUID 조회는 회전된 토큰 family를 폐기하지 않는다")
-    void find_user_uuid_does_not_revoke_family_when_refresh_token_is_rotated() {
-        CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
-        RefreshTokenService refreshTokenService = new RefreshTokenService(
-                new JwtProperties("taesin", 1800, 1209600, TEST_SECRET),
-                refreshTokenStore
-        );
-        UUID userUuid = UUID.randomUUID();
-        UUID familyId = UUID.randomUUID();
-        refreshTokenStore.refreshToken = "refresh-token";
-        refreshTokenStore.userUuid = userUuid;
-        refreshTokenStore.familyId = familyId;
-        refreshTokenStore.status = RefreshTokenStatus.ROTATED;
-
-        Optional<UUID> foundUserUuid = refreshTokenService.findUserUuid("refresh-token");
-
-        assertThat(foundUserUuid).contains(userUuid);
-        assertThat(refreshTokenStore.revokedFamilyId).isNull();
-    }
-
-    @Test
     @DisplayName("활성 리프레시 토큰으로 사용자 UUID를 조회한다")
     void find_active_user_uuid_by_refresh_token() {
         CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
@@ -135,18 +98,57 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("리프레시 토큰을 폐기한다")
-    void revoke_refresh_token() {
+    @DisplayName("현재 활성 리프레시 토큰을 폐기한다")
+    void revoke_current_active_refresh_token() {
         CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
         RefreshTokenService refreshTokenService = new RefreshTokenService(
                 new JwtProperties("taesin", 1800, 1209600, TEST_SECRET),
                 refreshTokenStore
         );
-        refreshTokenStore.save("refresh-token", UUID.randomUUID(), UUID.randomUUID(), Duration.ofDays(14));
+        UUID userUuid = UUID.randomUUID();
+        refreshTokenStore.save("refresh-token", userUuid, UUID.randomUUID(), Duration.ofDays(14));
 
-        refreshTokenService.revokeRefreshToken("refresh-token");
+        boolean revoked = refreshTokenService.revokeRefreshToken("refresh-token", userUuid);
 
+        assertThat(revoked).isTrue();
         assertThat(refreshTokenStore.deletedRefreshToken).isEqualTo("refresh-token");
+        assertThat(refreshTokenStore.deletedUserUuid).isEqualTo(userUuid);
+    }
+
+    @Test
+    @DisplayName("회전된 리프레시 토큰은 폐기하지 않는다")
+    void revoke_refresh_token_skips_rotated_token() {
+        CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
+        RefreshTokenService refreshTokenService = new RefreshTokenService(
+                new JwtProperties("taesin", 1800, 1209600, TEST_SECRET),
+                refreshTokenStore
+        );
+        UUID userUuid = UUID.randomUUID();
+        refreshTokenStore.save("refresh-token", userUuid, UUID.randomUUID(), Duration.ofDays(14));
+        refreshTokenStore.status = RefreshTokenStatus.ROTATED;
+
+        boolean revoked = refreshTokenService.revokeRefreshToken("refresh-token", userUuid);
+
+        assertThat(revoked).isFalse();
+        assertThat(refreshTokenStore.deletedRefreshToken).isNull();
+    }
+
+    @Test
+    @DisplayName("family의 current token이 아닌 리프레시 토큰은 폐기하지 않는다")
+    void revoke_refresh_token_skips_non_current_token() {
+        CapturingRefreshTokenStore refreshTokenStore = new CapturingRefreshTokenStore();
+        RefreshTokenService refreshTokenService = new RefreshTokenService(
+                new JwtProperties("taesin", 1800, 1209600, TEST_SECRET),
+                refreshTokenStore
+        );
+        UUID userUuid = UUID.randomUUID();
+        refreshTokenStore.save("refresh-token", userUuid, UUID.randomUUID(), Duration.ofDays(14));
+        refreshTokenStore.currentToken = false;
+
+        boolean revoked = refreshTokenService.revokeRefreshToken("refresh-token", userUuid);
+
+        assertThat(revoked).isFalse();
+        assertThat(refreshTokenStore.deletedRefreshToken).isNull();
     }
 
     private static class CapturingRefreshTokenStore implements RefreshTokenStore {
@@ -159,7 +161,9 @@ class RefreshTokenServiceTest {
         private Duration ttl;
         private Duration nextTtl;
         private String deletedRefreshToken;
+        private UUID deletedUserUuid;
         private RefreshTokenStatus status;
+        private boolean currentToken = true;
 
         @Override
         public void save(String refreshToken, UUID userUuid, UUID familyId, Duration ttl) {
@@ -200,6 +204,19 @@ class RefreshTokenServiceTest {
         @Override
         public void delete(String refreshToken) {
             this.deletedRefreshToken = refreshToken;
+        }
+
+        @Override
+        public boolean deleteIfCurrentActive(String refreshToken, UUID userUuid) {
+            if (!refreshToken.equals(this.refreshToken)
+                    || !userUuid.equals(this.userUuid)
+                    || status != RefreshTokenStatus.ACTIVE
+                    || !currentToken) {
+                return false;
+            }
+            this.deletedRefreshToken = refreshToken;
+            this.deletedUserUuid = userUuid;
+            return true;
         }
 
         @Override
