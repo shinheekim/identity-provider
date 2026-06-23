@@ -69,7 +69,7 @@ public class AuthController {
         return ApiResult.success(authSignupService.signup(request));
     }
 
-    @Operation(summary = "로그아웃", description = "현재 인증 상태를 종료하고 현재 인증 사용자 소유의 Refresh Token을 무효화합니다.")
+    @Operation(summary = "로그아웃", description = "현재 인증 상태를 종료하고 현재 인증 사용자 소유의 활성 Refresh Token을 무효화합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "400", description = "요청 값 오류"),
