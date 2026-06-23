@@ -275,6 +275,52 @@ class AuthControllerLoginTest {
     }
 
     @Test
+    @DisplayName("회전된 Refresh Token으로 로그아웃해도 재사용 감지 marker를 유지한다")
+    void logout_with_rotated_refresh_token_keeps_reuse_detection_marker() throws Exception {
+        seedUser("logout-rotated-marker@example.com");
+        LoginRequest loginRequest = new LoginRequest("logout-rotated-marker@example.com", "Password123!");
+
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = readData(loginResult, "accessToken").asText();
+        String rotatedRefreshToken = readData(loginResult, "refreshToken").asText();
+
+        MvcResult refreshResult = mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", rotatedRefreshToken))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String activeRefreshToken = readData(refreshResult, "refreshToken").asText();
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", rotatedRefreshToken))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.message").value("로그아웃이 완료되었습니다."));
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", rotatedRefreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
+
+        mockMvc.perform(post("/api/v1/auth/token/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("refreshToken", activeRefreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
     @DisplayName("이미 없거나 만료된 Refresh Token으로 로그아웃해도 성공 응답을 반환한다")
     void logout_missing_refresh_token_is_idempotent() throws Exception {
         seedUser("logout-idempotent@example.com");
@@ -384,10 +430,12 @@ class AuthControllerLoginTest {
         static class InMemoryRefreshTokenStore implements RefreshTokenStore {
 
             private final Map<String, StoredRefreshToken> tokens = new ConcurrentHashMap<>();
+            private final Map<UUID, String> currentTokens = new ConcurrentHashMap<>();
 
             @Override
             public void save(String refreshToken, UUID userUuid, UUID familyId, Duration ttl) {
                 tokens.put(refreshToken, new StoredRefreshToken(userUuid, familyId, RefreshTokenStatus.ACTIVE));
+                currentTokens.put(familyId, refreshToken);
             }
 
             @Override
@@ -408,6 +456,9 @@ class AuthControllerLoginTest {
                 if (currentToken.status() != RefreshTokenStatus.ACTIVE) {
                     return Optional.empty();
                 }
+                if (!currentRefreshToken.equals(currentTokens.get(currentToken.familyId()))) {
+                    return Optional.empty();
+                }
                 tokens.put(
                         currentRefreshToken,
                         new StoredRefreshToken(
@@ -422,12 +473,30 @@ class AuthControllerLoginTest {
                         RefreshTokenStatus.ACTIVE
                 );
                 tokens.put(nextRefreshToken, nextToken);
+                currentTokens.put(currentToken.familyId(), nextRefreshToken);
                 return Optional.of(nextToken);
             }
 
             @Override
             public void delete(String refreshToken) {
+                StoredRefreshToken removedToken = tokens.remove(refreshToken);
+                if (removedToken != null && refreshToken.equals(currentTokens.get(removedToken.familyId()))) {
+                    currentTokens.remove(removedToken.familyId());
+                }
+            }
+
+            @Override
+            public boolean deleteIfCurrentActive(String refreshToken, UUID userUuid) {
+                StoredRefreshToken token = tokens.get(refreshToken);
+                if (token == null
+                        || token.status() != RefreshTokenStatus.ACTIVE
+                        || !token.userUuid().equals(userUuid)
+                        || !refreshToken.equals(currentTokens.get(token.familyId()))) {
+                    return false;
+                }
                 tokens.remove(refreshToken);
+                currentTokens.remove(token.familyId());
+                return true;
             }
 
             @Override
