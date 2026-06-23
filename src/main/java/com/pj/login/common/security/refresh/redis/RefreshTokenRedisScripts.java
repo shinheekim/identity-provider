@@ -65,6 +65,33 @@ final class RefreshTokenRedisScripts {
             return redis.call('DEL', KEYS[1])
             """, Long.class);
 
+    static final RedisScript<Long> DELETE_CURRENT_ACTIVE = RedisScript.of("""
+            local status = redis.call('HGET', KEYS[1], 'status')
+            if status ~= 'ACTIVE' then
+                return 0
+            end
+
+            local userUuid = redis.call('HGET', KEYS[1], 'userUuid')
+            if userUuid ~= ARGV[1] then
+                return 0
+            end
+
+            local familyId = redis.call('HGET', KEYS[1], 'familyId')
+            if not familyId then
+                return 0
+            end
+
+            local familyKey = ARGV[2] .. familyId
+            local familyStatus = redis.call('HGET', familyKey, 'status')
+            local currentToken = redis.call('HGET', familyKey, 'currentToken')
+            if familyStatus ~= 'ACTIVE' or currentToken ~= KEYS[1] then
+                return 0
+            end
+
+            redis.call('SREM', familyKey .. ARGV[3], KEYS[1])
+            return redis.call('DEL', KEYS[1])
+            """, Long.class);
+
     static final RedisScript<Long> REVOKE_FAMILY = RedisScript.of("""
             redis.call('HSET', KEYS[1], 'status', 'REVOKED')
             local tokenKeys = redis.call('SMEMBERS', KEYS[2])
