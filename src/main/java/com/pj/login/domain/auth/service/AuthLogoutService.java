@@ -17,9 +17,7 @@ public class AuthLogoutService {
     private final RefreshTokenService refreshTokenService;
 
     public LogoutResponse logout(LogoutRequest request, UUID authenticatedUserUuid) {
-        refreshTokenService.findUserUuid(request.refreshToken())
-                .filter(authenticatedUserUuid::equals)
-                .ifPresent(userUuid -> refreshTokenService.revokeRefreshToken(request.refreshToken()));
+        refreshTokenService.revokeRefreshToken(request.refreshToken(), authenticatedUserUuid);
         return new LogoutResponse(LOGOUT_MESSAGE);
     }
 }
