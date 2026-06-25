@@ -189,6 +189,62 @@ class RedisRefreshTokenStoreTest {
     }
 
     @Test
+    @DisplayName("소유자가 일치하는 현재 활성 리프레시 토큰만 삭제한다")
+    void delete_if_current_active_by_hmac_digest_key() throws Exception {
+        JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);
+        RedisRefreshTokenStore refreshTokenStore = new RedisRefreshTokenStore(stringRedisTemplate, jwtProperties);
+        UUID userUuid = UUID.randomUUID();
+        ArgumentCaptor<RedisScript> scriptCaptor = ArgumentCaptor.forClass(RedisScript.class);
+        ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(List.class);
+        given(stringRedisTemplate.execute(
+                scriptCaptor.capture(),
+                keysCaptor.capture(),
+                eq(userUuid.toString()),
+                eq("auth:rt:v2:family:"),
+                eq(":tokens")
+        )).willReturn(1L);
+
+        boolean deleted = refreshTokenStore.deleteIfCurrentActive(RAW_REFRESH_TOKEN, userUuid);
+
+        assertThat(deleted).isTrue();
+        assertThat(scriptCaptor.getValue()).isSameAs(RefreshTokenRedisScripts.DELETE_CURRENT_ACTIVE);
+        assertThat(keysCaptor.getValue()).containsExactly(
+                "auth:rt:v2:token:" + hmacSha256(RAW_REFRESH_TOKEN, TEST_SECRET)
+        );
+    }
+
+    @Test
+    @DisplayName("현재 활성 리프레시 토큰 삭제 조건이 맞지 않으면 삭제 실패로 처리한다")
+    void delete_if_current_active_returns_false_when_condition_mismatches() {
+        JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);
+        RedisRefreshTokenStore refreshTokenStore = new RedisRefreshTokenStore(stringRedisTemplate, jwtProperties);
+        UUID userUuid = UUID.randomUUID();
+        given(stringRedisTemplate.execute(
+                any(RedisScript.class),
+                any(List.class),
+                eq(userUuid.toString()),
+                eq("auth:rt:v2:family:"),
+                eq(":tokens")
+        )).willReturn(0L);
+
+        boolean deleted = refreshTokenStore.deleteIfCurrentActive(RAW_REFRESH_TOKEN, userUuid);
+
+        assertThat(deleted).isFalse();
+    }
+
+    @Test
+    @DisplayName("현재 활성 토큰 삭제 스크립트는 소유자, ACTIVE 상태, family current token을 모두 확인한다")
+    void delete_current_active_script_requires_owner_active_status_and_current_token() {
+        String deleteCurrentActiveScript = RefreshTokenRedisScripts.DELETE_CURRENT_ACTIVE.getScriptAsString();
+
+        assertThat(deleteCurrentActiveScript).contains("status ~= 'ACTIVE'");
+        assertThat(deleteCurrentActiveScript).contains("userUuid ~= ARGV[1]");
+        assertThat(deleteCurrentActiveScript).contains("familyStatus ~= 'ACTIVE' or currentToken ~= KEYS[1]");
+        assertThat(deleteCurrentActiveScript).contains("redis.call('SREM', familyKey .. ARGV[3], KEYS[1])");
+        assertThat(deleteCurrentActiveScript).contains("redis.call('DEL', KEYS[1])");
+    }
+
+    @Test
     @DisplayName("family 단위 폐기 스크립트를 실행한다")
     void revoke_family() {
         JwtProperties jwtProperties = new JwtProperties("taesin", 1800, 1209600, TEST_SECRET);

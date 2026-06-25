@@ -86,6 +86,18 @@ public class RedisRefreshTokenStore implements RefreshTokenStore {
     }
 
     @Override
+    public boolean deleteIfCurrentActive(String refreshToken, UUID userUuid) {
+        Long deleted = stringRedisTemplate.execute(
+                RefreshTokenRedisScripts.DELETE_CURRENT_ACTIVE,
+                List.of(refreshTokenKey(refreshToken)),
+                userUuid.toString(),
+                FAMILY_KEY_PREFIX,
+                FAMILY_TOKENS_KEY_SUFFIX
+        );
+        return deleted != null && deleted > 0;
+    }
+
+    @Override
     public void revokeFamily(UUID familyId) {
         stringRedisTemplate.execute(
                 RefreshTokenRedisScripts.REVOKE_FAMILY,

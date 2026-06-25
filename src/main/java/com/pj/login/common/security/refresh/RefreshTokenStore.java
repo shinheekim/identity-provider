@@ -14,5 +14,7 @@ public interface RefreshTokenStore {
 
     void delete(String refreshToken);
 
+    boolean deleteIfCurrentActive(String refreshToken, UUID userUuid);
+
     void revokeFamily(UUID familyId);
 }

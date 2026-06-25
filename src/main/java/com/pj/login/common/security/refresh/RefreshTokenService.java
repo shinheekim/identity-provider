@@ -50,8 +50,8 @@ public class RefreshTokenService {
                 .map(rotatedToken -> new RefreshToken(nextRefreshToken, issuedAt.plus(ttl)));
     }
 
-    public void revokeRefreshToken(String refreshToken) {
-        refreshTokenStore.delete(refreshToken);
+    public boolean revokeRefreshToken(String refreshToken, UUID userUuid) {
+        return refreshTokenStore.deleteIfCurrentActive(refreshToken, userUuid);
     }
 
     /**
