@@ -70,23 +70,55 @@
 - 권한/인가(Role, Permission)
 - MFA (2차 인증)
 - 이메일/SMS 인증
-  - 이메일인증은 추가 개발에서 추가 고려한다.
+  - 이메일 인증은 M4 필수 범위에서 제외하고 별도 결정 후 추가 개발을 고려한다.
 - 알림 시스템
 - 서비스 도메인 로직
 
 ---
 
-## 3. 향후 확장 고려 (Future Scope)
+## 3. 개발 단계 기준
+
+### 3.1 M3 완료 범위
+
+- 회원가입
+- 일반 로그인
+- JWT Access Token 발급
+- Refresh Token 발급 및 재발급
+- Refresh Token Rotation
+- 로그인 이력 저장
+- 로그아웃
+  - develop 반영 완료
+
+### 3.2 M4 계획 범위
+
+- 내 정보 조회/수정
+- 비밀번호 변경
+- 계정 상태 조회
+- 회원 탈퇴
+- 카카오, 구글 소셜 로그인
+- 소셜 계정 연동/해제
+- 계정 상태별 인증 제한 정책 정리
+
+### 3.3 별도 결정 범위
+
+- 이메일 인증
+- Access Token 블랙리스트
+- 토큰 검증 API 외부 제공 여부
+- 관리자 인증 시스템
+- MFA 2차 인증
+
+---
+
+## 4. 향후 확장 고려 (Future Scope)
 
 - 토큰 블랙리스트 (로그아웃/강제 만료 대응)
-- Redis 기반 Refresh Token 관리
 - SSO (Single Sign-On)
 - OAuth2 Provider 역할 확장
 - 관리자 인증 시스템
 
 ---
 
-## 4. 설계 원칙 (Design Principles)
+## 5. 설계 원칙 (Design Principles)
 
 - 인증 서버는 독립 서비스로 구성한다
 - 인증은 JWT 기반으로 처리한다 (Stateless)
