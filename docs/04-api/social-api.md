@@ -15,6 +15,8 @@ Social API는 다음 기능을 포함한다.
 - 소셜 계정 연동
 - 소셜 계정 해제
 
+현재 Social API는 M4 개발 예정 범위이다.
+
 Social API는 로그인 자체를 처리하지 않으며,  
 소셜 로그인(Auth API) 이후의 계정 연결 및 해제 기능을 담당한다.
 
@@ -32,10 +34,26 @@ Social API는 로그인 자체를 처리하지 않으며,
 
 ## 4. API 목록
 
-| 기능 | Method | URL | 설명 |
-|------|--------|-----|------|
-| 소셜 계정 연동 | POST | `/api/v1/social/link` | 기존 계정에 소셜 계정 연결 |
-| 소셜 계정 해제 | DELETE | `/api/v1/social/unlink` | 연결된 소셜 계정 해제 |
+| 기능 | Method | URL | 설명 | 상태 |
+|------|--------|-----|------|------|
+| 소셜 계정 연동 | POST | `/api/v1/social/link` | 기존 계정에 소셜 계정 연결 | M4 예정 |
+| 소셜 계정 해제 | DELETE | `/api/v1/social/unlink` | 연결된 소셜 계정 해제 | M4 예정 |
+
+---
+
+## 4.1 M4 구현 기준
+
+| 기능 | 완료 기준 |
+|------|------|
+| 소셜 계정 연동 | 인증된 사용자에게 KAKAO/GOOGLE Identity를 추가하고 중복 연동을 방지한다 |
+| 소셜 계정 해제 | 연결된 소셜 Identity를 해제하되 마지막 로그인 수단은 제거하지 않는다 |
+
+공통 기준:
+
+- 하나의 providerUserId는 하나의 User에만 연결될 수 있다
+- provider 값은 `KAKAO`, `GOOGLE`만 허용한다
+- providerAccessToken 검증 실패 시 `INVALID_SOCIAL_TOKEN`을 반환한다
+- 소셜 계정 연동/해제 이력 저장은 확장 항목으로 둔다
 
 ---
 
@@ -75,12 +93,12 @@ Social API는 로그인 자체를 처리하지 않으며,
 
 ### 요청 예시
 
-ㅇㅇㅇjson
+```json
 {
-"provider": "KAKAO",
-"providerAccessToken": "kakao-access-token-value"
+  "provider": "KAKAO",
+  "providerAccessToken": "kakao-access-token-value"
 }
-ㅇㅇㅇ
+```
 
 ---
 

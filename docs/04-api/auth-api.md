@@ -20,6 +20,18 @@ Auth API는 다음 기능을 포함한다.
 
 Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계정 상태 조회 등의 기능은 별도 User API 또는 Account API에서 관리한다.
 
+### 현재 구현 상태
+
+| 기능 | 상태 | 비고 |
+|------|------|------|
+| 회원가입 | M3 완료 | 로컬 계정 생성 |
+| 일반 로그인 | M3 완료 | Access Token, Refresh Token 발급 |
+| 토큰 재발급 | M3 완료 | Refresh Token Rotation 적용 |
+| 로그아웃 | M3 완료 | 현재 인증 사용자 소유의 활성 Refresh Token 무효화 |
+| 소셜 로그인 | M4 예정 | 카카오, 구글 |
+| 토큰 검증 | 별도 결정 | 내부 서비스 또는 API Gateway 연동 용도 |
+| 이메일 인증 | 별도 결정 | M4 필수 범위에서 제외 |
+
 ---
 
 ## 3. 설계 원칙
@@ -35,16 +47,16 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ## 4. API 목록
 
-| 기능 | Method | URL | 설명                  |
-|------|--------|-----|---------------------|
-| 회원가입 | POST   | `/api/v1/auth/signup` | 일반 사용자 회원가입         |
-| 로그인 | POST   | `/api/v1/auth/login` | 일반 로그인 및 JWT 발급     |
-| 소셜 로그인 | POST   | `/api/v1/auth/social/login` | 소셜 로그인 처리 및 JWT 발급  |
-| 로그아웃 | POST   | `/api/v1/auth/logout` | Refresh Token 무효화   |
-| 토큰 재발급 | POST   | `/api/v1/auth/token/refresh` | Access/Refresh Token 재발급 |
-| 토큰 검증 | GET    | `/api/v1/auth/token/verify` | Access Token 유효성 확인 |
-| 이메일 인증 번호 발송 | POST   | `/api/v1/auth/email/send` | 이메일 인증 번호 발송 (개발고려) |
-| 이메일 인증 확인  | POST   | `/api/v1/auth/email/verify` | 이메일 인증 확인 (개발 고려)   |
+| 기능 | Method | URL | 설명 | 상태 |
+|------|--------|-----|------|------|
+| 회원가입 | POST | `/api/v1/auth/signup` | 일반 사용자 회원가입 | M3 완료 |
+| 로그인 | POST | `/api/v1/auth/login` | 일반 로그인 및 JWT 발급 | M3 완료 |
+| 로그아웃 | POST | `/api/v1/auth/logout` | Refresh Token 무효화 | M3 완료 |
+| 토큰 재발급 | POST | `/api/v1/auth/token/refresh` | Access/Refresh Token 재발급 | M3 완료 |
+| 소셜 로그인 | POST | `/api/v1/auth/social/login` | 소셜 로그인 처리 및 JWT 발급 | M4 예정 |
+| 토큰 검증 | GET | `/api/v1/auth/token/verify` | Access Token 유효성 확인 | 별도 결정 |
+| 이메일 인증 번호 발송 | POST | `/api/v1/auth/email/send` | 이메일 인증 번호 발송 | 별도 결정 |
+| 이메일 인증 확인 | POST | `/api/v1/auth/email/verify` | 이메일 인증 확인 | 별도 결정 |
 
 ---
 
@@ -336,10 +348,20 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - provider 고유 사용자 식별자 확인
 - 기존 연동 계정 존재 여부 확인
 - 존재 시 로그인 처리
-- 미존재 시 정책에 따라 회원가입 또는 연동 처리
+- 미존재 시 신규 User와 소셜 Identity를 생성하여 자동 가입 처리
 - 계정 상태 확인
 - JWT 발급
 - 로그인 이력 저장
+
+### M4 구현 기준
+
+- `KAKAO`, `GOOGLE` provider를 지원한다
+- providerAccessToken이 유효하지 않으면 `INVALID_SOCIAL_TOKEN`을 반환한다
+- 이미 연동된 소셜 계정이면 기존 User 기준으로 로그인한다
+- 최초 소셜 로그인은 신규 User와 소셜 Identity를 생성한다
+- 동일 이메일을 가진 기존 로컬 계정과 자동 연결할지 여부는 별도 정책으로 결정한다
+- 로그인 성공 시 일반 로그인과 동일하게 Access Token, Refresh Token, accountStatus를 반환한다
+- 소셜 로그인 성공/실패 이력을 저장한다
 
 ---
 
@@ -575,6 +597,9 @@ Refresh Token을 이용하여 새로운 Access Token과 Refresh Token을 발급�
 Access Token의 유효성을 검증한다.  
 내부 서비스 또는 API Gateway에서 사용할 수 있다.
 
+현재 별도 토큰 검증 API 제공 여부는 결정 항목이다.
+보호된 API의 Access Token 검증은 Spring Security/JWT 검증 흐름에서 수행한다.
+
 ---
 
 ### 요청
@@ -629,6 +654,8 @@ Access Token의 유효성을 검증한다.
 ### 개요
 사용자의 이메일로 인증 번호를 발송한다.  
 회원가입 전 이메일 인증이 필요한 경우 사용된다.
+
+현재 이메일 인증은 M4 필수 범위가 아니며, 가입 필수 정책인지 선택 기능인지 결정한 뒤 별도 개발한다.
 
 ---
 
@@ -701,6 +728,8 @@ Access Token의 유효성을 검증한다.
 ## 5.8 이메일 인증 확인
 ### 개요
 사용자가 입력한 인증 번호를 검증하여 이메일 인증을 완료한다.
+
+현재 이메일 인증은 별도 결정 항목이므로, 본 API는 설계 초안으로 관리한다.
 
 ---
 
@@ -836,9 +865,10 @@ Access Token의 유효성을 검증한다.
 
 - 회원가입 식별자를 이메일로 할지 별도 로그인 ID로 할지 결정이 필요하다
 - 소셜 로그인 최초 진입 시 자동 가입 여부를 결정해야 한다
-- Refresh Token 저장소를 DB로 할지 Redis로 할지 결정이 필요하다
-- 로그아웃 시 Access Token까지 제어할지 정책 결정이 필요하다
+- Refresh Token 저장소는 Redis를 기본으로 사용한다
+- 로그아웃 시 Access Token까지 제어할지 여부는 별도 정책 결정이 필요하다
 - 토큰 검증 API를 외부 서비스에 직접 제공할지 내부 용도로 한정할지 결정이 필요하다
+- 이메일 인증은 가입 필수 정책 여부를 결정한 뒤 별도 일정으로 진행한다
 
 ---
 
