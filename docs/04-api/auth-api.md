@@ -30,7 +30,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 | 로그아웃 | M3 완료 | 현재 인증 사용자 소유의 활성 Refresh Token 무효화 |
 | 소셜 로그인 | M4 예정 | 카카오, 구글 |
 | 토큰 검증 | 별도 결정 | 내부 서비스 또는 API Gateway 연동 용도 |
-| 이메일 인증 | 별도 결정 | M4 필수 범위에서 제외 |
+| 이메일 인증 | M4 예정 | 로컬 회원가입 이메일 인증 |
 
 ---
 
@@ -55,8 +55,8 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 | 토큰 재발급 | POST | `/api/v1/auth/token/refresh` | Access/Refresh Token 재발급 | M3 완료 |
 | 소셜 로그인 | POST | `/api/v1/auth/social/login` | 소셜 로그인 처리 및 JWT 발급 | M4 예정 |
 | 토큰 검증 | GET | `/api/v1/auth/token/verify` | Access Token 유효성 확인 | 별도 결정 |
-| 이메일 인증 번호 발송 | POST | `/api/v1/auth/email/send` | 이메일 인증 번호 발송 | 별도 결정 |
-| 이메일 인증 확인 | POST | `/api/v1/auth/email/verify` | 이메일 인증 확인 | 별도 결정 |
+| 이메일 인증 번호 발송 | POST | `/api/v1/auth/email/send` | 회원가입 이메일 인증 번호 발송 | M4 예정 |
+| 이메일 인증 확인 | POST | `/api/v1/auth/email/verify` | 회원가입 이메일 인증 확인 | M4 예정 |
 
 ---
 
@@ -82,31 +82,32 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 | 필드 | 타입 | 필수 | 설명         |
 |------|------|------|------------|
-| loginId | String | Y | 사용자 로그인ID  |
-| email | String | Y | 사용자 이메일    |
+| loginId | String | Y | 사용자 로그인 ID |
+| email | String | Y | 사용자 이메일 |
 | password | String | Y | 사용자 비밀번호   |
 | phoneNumber | String | N | 사용자 전화번호   |
 
 ---
 
 ### 요청 예시
-- login id 는 서비스에서 로그인을 하고자 하는 것으로 정한다.
+- `loginId`는 로그인 ID이고, `email`은 인증된 연락 이메일이다.
 ```json
 {
   "loginId" : "test@example.com",
   "email": "test@example.com",
   "password": "Password123!",
   "phoneNumber": ""
-  
 }
 ```
 처리 로직 (설계 기준)
+- loginId 중복 여부 확인
 - 이메일 중복 여부 확인
+- 이메일 인증 완료 여부 확인
 - 비밀번호 정책 검증
 - User 엔티티 생성
 - Identity (일반 로그인) 생성
 - 비밀번호 암호화 저장
-- 기본 계정 상태 설정 (ACTIVE 또는 PENDING)
+- 기본 계정 상태 `ACTIVE`, `emailVerified = true` 설정
 - 회원가입 완료 처리
 
 ### 응답
@@ -131,8 +132,8 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ### 에러 응답 예시
 #### 1. 이메일 인증
-- 인증시스템을 구축하지 않았다면 해당 에러 응답은 나오지 않는다.
-- 
+- 이메일 인증이 완료되지 않은 이메일로 회원가입을 요청한 경우 발생한다.
+
 ```json
 {
   "success": false,
@@ -144,7 +145,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 ```
 
 #### 2.이메일 중복
-- 인증시스템이 구축을 할경우 인증을 해야 중복을 안내해준다.
+- 이미 가입된 이메일로 회원가입을 요청한 경우 발생한다.
 ```json
 {
   "success": false,
@@ -179,7 +180,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ### 개요
 일반 로그인 사용자를 인증하고 JWT를 발급한다.  
-사용자는 `loginId`와 `password`를 이용해 로그인할 수 있다.
+사용자는 `loginId`와 `password`로 로그인한다.
 
 ---
 
@@ -213,11 +214,11 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 
 ### 처리 로직 (설계 기준)
 
-- loginId 기준 사용자 조회
+- loginId 기준 LOCAL Identity 조회
 - 일반 로그인용 Identity 존재 여부 확인
 - 비밀번호 검증
 - 계정 상태 확인
-- 이메일 인증 정책이 있는 경우 인증 여부 확인
+- 이메일 인증 완료 여부 확인
 - 로그인 성공 시 Access Token / Refresh Token 발급
 - 마지막 로그인 시각 갱신
 - 로그인 이력 저장
@@ -246,7 +247,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
         "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.access-token",
         "refreshToken": "refresh-token-sample-value",
         "accountStatus": "ACTIVE"
-}
+    }
 }
 ```
 
@@ -303,6 +304,30 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 }
 ```
 
+#### 5. 이메일 미인증
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "EMAIL_NOT_VERIFIED",
+        "message": "이메일 인증이 완료되지 않았습니다."
+    }
+}
+```
+
+#### 6. 비밀번호 잠금
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "PASSWORD_LOCKED",
+        "message": "비밀번호 입력 오류가 반복되어 계정이 잠겼습니다. 10분 후 다시 시도해주세요."
+    }
+}
+```
+
 ---
 
 ## 5.3 소셜 로그인
@@ -348,7 +373,9 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - provider 고유 사용자 식별자 확인
 - 기존 연동 계정 존재 여부 확인
 - 존재 시 로그인 처리
-- 미존재 시 신규 User와 소셜 Identity를 생성하여 자동 가입 처리
+- 미존재하고 provider의 verified email이 기존 User.email과 일치하면 해당 User에 소셜 Identity 자동 연결 후 로그인 처리
+- 미존재하고 provider의 verified email에 해당하는 기존 User가 없으면 자동 가입하지 않고 회원가입 또는 기존 ID 로그인 후 소셜 연동을 유도
+- provider 이메일이 없거나 검증되지 않은 경우 M4에서는 자동 연결하지 않는다
 - 계정 상태 확인
 - JWT 발급
 - 로그인 이력 저장
@@ -358,8 +385,9 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - `KAKAO`, `GOOGLE` provider를 지원한다
 - providerAccessToken이 유효하지 않으면 `INVALID_SOCIAL_TOKEN`을 반환한다
 - 이미 연동된 소셜 계정이면 기존 User 기준으로 로그인한다
-- 최초 소셜 로그인은 신규 User와 소셜 Identity를 생성한다
-- 동일 이메일을 가진 기존 로컬 계정과 자동 연결할지 여부는 별도 정책으로 결정한다
+- provider verified email이 기존 User.email과 일치하면 해당 User에 소셜 Identity를 자동 연결한다
+- provider verified email에 해당하는 기존 User가 없으면 `SOCIAL_ACCOUNT_NOT_LINKED`를 반환하고 회원가입 또는 기존 ID 연동을 안내한다
+- provider 이메일이 없거나 검증되지 않은 경우에는 `SOCIAL_EMAIL_NOT_VERIFIED`를 반환한다
 - 로그인 성공 시 일반 로그인과 동일하게 Access Token, Refresh Token, accountStatus를 반환한다
 - 소셜 로그인 성공/실패 이력을 저장한다
 
@@ -374,7 +402,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 | data.accessToken | String | Y | Access Token |
 | data.refreshToken | String | Y | Refresh Token |
 | data.accountStatus | String | Y | 계정 상태 |
-| data.isNewUser | Boolean | Y | 신규 사용자 여부 |
+| data.linkedByEmail | Boolean | Y | provider verified email 기준 자동 연결 여부 |
 
 ---
 
@@ -388,7 +416,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
       "accessToken": "access-token-value",
       "refreshToken": "refresh-token-value",
       "accountStatus": "ACTIVE",
-      "isNewUser": false
+      "linkedByEmail": true
   }
 }
 ```
@@ -422,12 +450,27 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 ```
 
 #### 3. 계정 미연동
+
+provider verified email과 일치하는 기존 계정이 없거나, 사용자가 기존 ID와 명시적으로 연동해야 하는 경우 발생한다.
+
 ```json
 {
   "success": false,
   "error": {
     "code": "SOCIAL_ACCOUNT_NOT_LINKED",
-    "message": "연결된 계정을 찾을 수 없습니다."
+    "message": "연결된 계정을 찾을 수 없습니다. 회원가입하거나 기존 ID로 로그인 후 소셜 계정을 연동해주세요."
+  }
+}
+```
+
+#### 4. 소셜 이메일 미검증
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SOCIAL_EMAIL_NOT_VERIFIED",
+    "message": "소셜 계정의 이메일 인증 상태를 확인할 수 없습니다."
   }
 }
 ```
@@ -655,7 +698,7 @@ Access Token의 유효성을 검증한다.
 사용자의 이메일로 인증 번호를 발송한다.  
 회원가입 전 이메일 인증이 필요한 경우 사용된다.
 
-현재 이메일 인증은 M4 필수 범위가 아니며, 가입 필수 정책인지 선택 기능인지 결정한 뒤 별도 개발한다.
+M4에서는 로컬 회원가입의 필수 선행 절차로 구현한다.
 
 ---
 
@@ -688,8 +731,10 @@ Access Token의 유효성을 검증한다.
 ### 처리 로직 (설계 기준)
 
 - 이메일 형식 검증
+- 이메일 중복 여부 확인
 - 인증 번호 생성
 - 인증 번호 저장 (TTL 포함)
+- 동일 이메일 재발송 및 실패 횟수 제한 확인
 - 이메일 발송
 
 ---
@@ -729,7 +774,7 @@ Access Token의 유효성을 검증한다.
 ### 개요
 사용자가 입력한 인증 번호를 검증하여 이메일 인증을 완료한다.
 
-현재 이메일 인증은 별도 결정 항목이므로, 본 API는 설계 초안으로 관리한다.
+M4에서는 회원가입 전에 호출하는 API로 구현한다. 인증 성공 상태는 짧은 TTL을 가진 저장소에 보관하고, 회원가입 시 해당 상태를 확인한다.
 
 ---
 
@@ -766,7 +811,7 @@ Access Token의 유효성을 검증한다.
 - 이메일 기준 인증 정보 조회
 - 인증 번호 일치 여부 확인
 - 만료 여부 확인
-- 인증 완료 처리 (emailVerified = true)
+- 회원가입용 이메일 인증 완료 상태 저장
 
 ---
 
@@ -832,17 +877,26 @@ Access Token의 유효성을 검증한다.
 
 ## 6. 인증 흐름 요약
 
-### 6.1 일반 로그인 흐름
+### 6.1 이메일 인증 후 회원가입 흐름
+
+1. 사용자가 이메일 인증 번호 발송 요청을 보낸다
+2. 서버가 이메일 형식, 중복 여부, 재시도 제한을 검증한 뒤 인증 번호를 발송한다
+3. 사용자가 인증 번호 확인 요청을 보낸다
+4. 서버가 인증 번호와 만료 시간을 검증하고 회원가입용 이메일 인증 완료 상태를 저장한다
+5. 사용자가 인증된 이메일과 별도 loginId로 회원가입 요청을 보낸다
+6. 서버가 loginId 중복 여부와 이메일 인증 완료 상태를 확인한 뒤 User, LOCAL Identity, Password를 생성한다
+
+### 6.2 일반 로그인 흐름
 
 1. 사용자가 로그인 요청을 보낸다
-2. 서버가 사용자 식별자와 비밀번호를 검증한다
-3. 계정 상태를 확인한다
+2. 서버가 loginId와 비밀번호를 검증한다
+3. 계정 상태와 이메일 인증 상태를 확인한다
 4. 인증 성공 시 Access Token과 Refresh Token을 발급한다
 5. 로그인 이력과 마지막 로그인 시각을 갱신한다
 
 ---
 
-### 6.2 토큰 재발급 흐름
+### 6.3 토큰 재발급 흐름
 
 1. 사용자가 Refresh Token으로 재발급 요청을 보낸다
 2. 서버가 Refresh Token의 유효성을 검증한다
@@ -851,7 +905,7 @@ Access Token의 유효성을 검증한다.
 
 ---
 
-### 6.3 로그아웃 흐름
+### 6.4 로그아웃 흐름
 
 1. 사용자가 로그아웃 요청을 보낸다
 2. 서버가 Redis 원자 연산으로 Access Token subject, Refresh Token 소유자, 토큰 상태, family current token 일치 여부를 검증한다
@@ -863,12 +917,13 @@ Access Token의 유효성을 검증한다.
 
 ## 7. 고려 사항
 
-- 회원가입 식별자를 이메일로 할지 별도 로그인 ID로 할지 결정이 필요하다
-- 소셜 로그인 최초 진입 시 자동 가입 여부를 결정해야 한다
+- 로컬 회원가입/로그인 식별자인 `loginId`와 인증 연락처인 `email`은 분리한다
+- 회원가입 요청의 `email`은 인증 완료 상태여야 하지만 `loginId`와 같은 값일 필요는 없다
+- 소셜 로그인 최초 진입은 provider verified email 기준으로 자동 연결을 시도한다
+- 일치하는 기존 email이 없으면 자동 가입하지 않고 회원가입 또는 기존 ID 로그인 후 소셜 연동으로 유도한다
 - Refresh Token 저장소는 Redis를 기본으로 사용한다
 - 로그아웃 시 Access Token까지 제어할지 여부는 별도 정책 결정이 필요하다
 - 토큰 검증 API를 외부 서비스에 직접 제공할지 내부 용도로 한정할지 결정이 필요하다
-- 이메일 인증은 가입 필수 정책 여부를 결정한 뒤 별도 일정으로 진행한다
 
 ---
 
