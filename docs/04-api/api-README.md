@@ -16,8 +16,8 @@
 | 토큰 재발급 | POST | `/api/v1/auth/token/refresh` | Access/Refresh Token 재발급 | M3 완료 |
 | 소셜 로그인 | POST | `/api/v1/auth/social/login` | 소셜 로그인 처리 및 JWT 발급 | M4 예정 |
 | 토큰 검증 | GET | `/api/v1/auth/token/verify` | Access Token 유효성 확인 | 별도 결정 |
-| 이메일 인증 번호 발송 | POST | `/api/v1/auth/email/send` | 이메일 인증 번호 발송 | 별도 결정 |
-| 이메일 인증 확인 | POST | `/api/v1/auth/email/verify` | 이메일 인증 확인 | 별도 결정 |
+| 이메일 인증 번호 발송 | POST | `/api/v1/auth/email/send` | 회원가입 이메일 인증 번호 발송 | M4 예정 |
+| 이메일 인증 확인 | POST | `/api/v1/auth/email/verify` | 회원가입 이메일 인증 확인 | M4 예정 |
 
 ---
 
@@ -28,6 +28,8 @@
 |------|--------|-----|------|------|
 | 내 정보 조회 | GET | `/api/v1/users/me` | 현재 로그인한 사용자 정보 조회 | M4 예정 |
 | 내 정보 수정 | PATCH | `/api/v1/users/me` | 현재 로그인한 사용자 정보 수정 | M4 예정 |
+| 이메일 변경 인증 번호 발송 | POST | `/api/v1/users/email/send` | 이메일 변경 인증 번호 발송 | M4 예정 |
+| 이메일 변경 인증 확인 | POST | `/api/v1/users/email/verify` | 인증 완료 후 User.email 변경 | M4 예정 |
 | 비밀번호 변경 | PATCH | `/api/v1/users/password` | 사용자 비밀번호 변경 | M4 예정 |
 
 
@@ -58,8 +60,8 @@
 
 | 영역 | 완료 기준 |
 |------|------|
-| Auth API | 로그아웃 회귀 테스트 완료, 소셜 로그인 기본 흐름 구현 |
-| User API | 내 정보 조회/수정, 비밀번호 변경 API가 인증 사용자 기준으로 동작 |
+| Auth API | 로그아웃 회귀 테스트 완료, 이메일 인증, loginId 기반 로그인, 소셜 로그인 기본 흐름 구현 |
+| User API | 내 정보 조회/수정, 이메일 변경 인증, 비밀번호 변경 API가 인증 사용자 기준으로 동작 |
 | Account API | 계정 상태 조회, 회원 탈퇴, 탈퇴 후 로그인/재발급 차단 동작 |
 | Social API | 소셜 계정 연동/해제, 마지막 로그인 수단 해제 방지 동작 |
-| 별도 결정 | 이메일 인증, Access Token 블랙리스트, 토큰 검증 API 외부 제공 여부 |
+| 별도 결정 | Access Token 블랙리스트, 토큰 검증 API 외부 제공 여부 |
