@@ -62,8 +62,8 @@ public enum ProviderType {
 ### 3.4 일반 로그인 정보
 
 - **loginId**
-    - 일반 로그인 시 사용하는 ID
-    - 이메일 또는 사용자 ID
+    - 일반 로그인 시 사용하는 로그인 ID
+    - User.email과 같을 필요는 없다
 
 ---
 
@@ -71,7 +71,7 @@ public enum ProviderType {
 
 - **principalEmail**
     - 해당 Identity 기준의 대표 이메일
-    - 소셜 로그인 시 제공되는 이메일 또는 일반 로그인 이메일
+    - 소셜 로그인 시 제공되는 이메일 또는 로컬 회원가입 시 입력된 이메일
 
 ---
 
@@ -155,7 +155,8 @@ public enum ProviderType {
 ## 7. 고려 사항
 
 - (providerType, providerUserId)는 unique 제약 필요
-- loginId는 unique 정책 필요
+- LOCAL loginId는 unique 정책 필요
+- User.email 변경 시 LOCAL loginId는 변경하지 않는다
 - 소셜 로그인과 일반 로그인 혼합 시 충돌 방지 정책 필요
 - linked = false 상태 처리 정책 정의 필요
 
