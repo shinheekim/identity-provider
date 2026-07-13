@@ -375,7 +375,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - 존재 시 로그인 처리
 - 미존재하고 provider의 verified email이 기존 User.email과 일치하면 해당 User에 소셜 Identity 자동 연결 후 로그인 처리
 - 미존재하고 provider의 verified email에 해당하는 기존 User가 없으면 자동 가입하지 않고 회원가입 또는 기존 ID 로그인 후 소셜 연동을 유도
-- provider 이메일이 없거나 검증되지 않은 경우 M4에서는 자동 연결하지 않는다
+- provider 이메일이 없거나 검증되지 않은 경우 자동 연결하지 않고 기존 ID 로그인 후 소셜 연동을 유도
 - 계정 상태 확인
 - JWT 발급
 - 로그인 이력 저장
@@ -387,7 +387,7 @@ Auth API는 인증 자체를 담당하며, 사용자 상세 정보 관리나 계
 - 이미 연동된 소셜 계정이면 기존 User 기준으로 로그인한다
 - provider verified email이 기존 User.email과 일치하면 해당 User에 소셜 Identity를 자동 연결한다
 - provider verified email에 해당하는 기존 User가 없으면 `SOCIAL_ACCOUNT_NOT_LINKED`를 반환하고 회원가입 또는 기존 ID 연동을 안내한다
-- provider 이메일이 없거나 검증되지 않은 경우에는 `SOCIAL_EMAIL_NOT_VERIFIED`를 반환한다
+- provider 이메일이 없거나 검증되지 않은 경우에도 `SOCIAL_ACCOUNT_NOT_LINKED`를 반환하고 기존 ID 연동을 안내한다
 - 로그인 성공 시 일반 로그인과 동일하게 Access Token, Refresh Token, accountStatus를 반환한다
 - 소셜 로그인 성공/실패 이력을 저장한다
 
@@ -462,20 +462,6 @@ provider verified email과 일치하는 기존 계정이 없거나, 사용자가
   }
 }
 ```
-
-#### 4. 소셜 이메일 미검증
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "SOCIAL_EMAIL_NOT_VERIFIED",
-    "message": "소셜 계정의 이메일 인증 상태를 확인할 수 없습니다."
-  }
-}
-```
-
----
 
 ### 5.4 로그아웃
 

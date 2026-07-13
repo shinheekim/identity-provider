@@ -55,8 +55,9 @@ Social API는 로그인 자체를 처리하지 않으며,
 - 하나의 providerUserId는 하나의 User에만 연결될 수 있다
 - provider 값은 `KAKAO`, `GOOGLE`만 허용한다
 - providerAccessToken 검증 실패 시 `INVALID_SOCIAL_TOKEN`을 반환한다
-- provider 이메일이 없거나 검증되지 않은 경우 M4에서는 자동 연결하지 않는다
-- 명시적 연동에서는 providerUserId 중복 여부와 현재 인증 사용자의 의사를 우선 검증한다
+- provider 이메일이 없거나 검증되지 않은 경우 Auth API의 자동 연결은 수행하지 않는다
+- Social API의 명시적 연동에서는 providerUserId 중복 여부와 현재 인증 사용자의 의사를 우선 검증한다
+- 명시적 연동에서는 provider email verified 여부를 필수 조건으로 두지 않는다
 - 소셜 계정 연동/해제 이력 저장은 확장 항목으로 둔다
 
 ---
@@ -112,7 +113,7 @@ Social API는 로그인 자체를 처리하지 않으며,
 - provider 값 검증
 - 소셜 제공자 API를 호출하여 사용자 정보 조회
 - provider의 고유 사용자 식별자 확인
-- provider email과 verified 상태 확인
+- provider email과 verified 상태는 제공되는 경우 참고 정보로 확인
 - 이미 다른 사용자에게 연동된 계정인지 확인
 - 현재 사용자 계정에 소셜 계정 연동
 - 필요 시 연동 이력 저장
@@ -192,20 +193,6 @@ Social API는 로그인 자체를 처리하지 않으며,
     }
 }
 ```
-
-#### 5. 소셜 이메일 미검증
-
-```json
-{
-    "success": false,
-    "error": {
-        "code": "SOCIAL_EMAIL_NOT_VERIFIED",
-        "message": "소셜 계정의 이메일 인증 상태를 확인할 수 없습니다."
-    }
-}
-```
-
----
 
 ### 5.2 소셜 계정 해제
 

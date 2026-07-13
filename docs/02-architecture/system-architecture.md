@@ -71,7 +71,7 @@ Taesin Identity Provider는 여러 서비스에서 공통으로 사용할 수 �
 
 ### 4.2 Redis
 
-- 이메일 인증 번호 및 회원가입용 인증 완료 상태
+- 이메일 인증 번호 및 회원가입/이메일 변경용 인증 완료 상태
 - Refresh Token digest key
 - Refresh Token 상태
   - `ACTIVE`
