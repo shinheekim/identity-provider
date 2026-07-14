@@ -3,6 +3,8 @@
 ## 상태
 완료.
 
+현재 반영 상태: M3에서 Refresh Token Rotation / Token Family / Redis 원자 처리 구현 완료.
+
 ## 배경
 현재 Refresh Token 재발급은 단순한 rotation 구조를 사용한다.
 
@@ -24,7 +26,7 @@
 ---
 
 ## 결정
-후속 PR에서 Refresh Token rotation은 단순 삭제 후 재생성 방식 대신
+결정 당시 후속 PR에서 Refresh Token rotation은 단순 삭제 후 재생성 방식 대신
 `상태 전이 + Token Family + Redis 원자 처리` 방식으로 확장한다.
 
 핵심 방향은 다음과 같다.
@@ -147,15 +149,29 @@ RTF:family1 = {
 
 ## 이번 PR 처리 범위 (논의 PR)
 
-이번 PR에서는 아래만 반영한다.
+결정 당시 논의 PR에서는 아래만 반영한다.
 
 - 현행 구현은 유지
 - 논의 결과를 ADR로 문서화
 - 문서상 토큰 재발급 설계의 확장 방향을 남김
 
-아래 항목은 후속 PR에서 진행한다.
+아래 항목은 후속 PR에서 진행하기로 했다.
 
 - Redis 원자 rotation 구현
 - Token Family 데이터 구조 도입
 - `ACTIVE / ROTATED / REVOKED` 상태 관리
 - 재사용 감지 및 family 전체 폐기 처리
+
+---
+
+## 현재 반영 범위
+
+M3 완료 기준으로 아래 항목은 구현 완료 상태로 관리한다.
+
+- 로그인 시 Refresh Token Family 생성
+- Refresh Token 상태값 `ACTIVE`, `ROTATED`, `REVOKED` 관리
+- 재발급 시 Redis 원자 처리 기반 rotation
+- 이미 사용된 Refresh Token 재사용 감지
+- 재사용 감지 시 family 단위 폐기
+
+로그아웃과 연계된 활성 Refresh Token 무효화 정책은 develop에 반영되었으며, M4에서는 계정 탈퇴와의 연계를 추가 확인한다.

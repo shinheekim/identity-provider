@@ -130,6 +130,14 @@ docker run --rm -p 8080:8080 \
 - [PR 컨벤션](docs/05-conventions/pr-convetion.md)
 - [의사결정 기록](docs/07-decisions/decision-README.md)
 - [개발 계획](docs/08-plannings/08-planning.md)
+- [M4 개발 계획](docs/08-plannings/m4-plan.md)
+
+## 현재 개발 상태
+
+- M3 인증 기능 개발 완료
+- 로그아웃 기능은 develop 반영 완료
+- M4는 이메일 인증, 사용자/계정 관리, 소셜 로그인, 소셜 계정 연동/해제, 보안 정책 정리를 중심으로 진행
+- 로컬 회원가입/로그인은 loginId와 email을 분리하고, email은 인증된 연락 이메일로 관리 예정
 
 ## 주요 도메인 개념
 

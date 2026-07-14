@@ -15,6 +15,8 @@ Social API는 다음 기능을 포함한다.
 - 소셜 계정 연동
 - 소셜 계정 해제
 
+현재 Social API는 M4 개발 예정 범위이다.
+
 Social API는 로그인 자체를 처리하지 않으며,  
 소셜 로그인(Auth API) 이후의 계정 연결 및 해제 기능을 담당한다.
 
@@ -25,6 +27,8 @@ Social API는 로그인 자체를 처리하지 않으며,
 - Social API는 인증된 사용자만 접근할 수 있다
 - 하나의 소셜 계정은 하나의 사용자 계정에만 연결될 수 있다
 - 동일 사용자는 여러 소셜 계정을 연동할 수 있다
+- provider가 제공한 verified email이 기존 User.email과 일치하는 경우 Auth API의 소셜 로그인 흐름에서 자동 연결할 수 있다
+- provider email이 기존 User.email과 다르더라도, 사용자가 기존 ID로 로그인한 상태에서 명시적으로 요청하면 Social API에서 연동할 수 있다
 - 소셜 계정 해제 시 최소 1개 이상의 로그인 수단은 유지되어야 한다
 - 소셜 계정 연동 및 해제는 감사 이력 저장 정책으로 확장할 수 있다
 
@@ -32,10 +36,29 @@ Social API는 로그인 자체를 처리하지 않으며,
 
 ## 4. API 목록
 
-| 기능 | Method | URL | 설명 |
-|------|--------|-----|------|
-| 소셜 계정 연동 | POST | `/api/v1/social/link` | 기존 계정에 소셜 계정 연결 |
-| 소셜 계정 해제 | DELETE | `/api/v1/social/unlink` | 연결된 소셜 계정 해제 |
+| 기능 | Method | URL | 설명 | 상태 |
+|------|--------|-----|------|------|
+| 소셜 계정 연동 | POST | `/api/v1/social/link` | 기존 계정에 소셜 계정 연결 | M4 예정 |
+| 소셜 계정 해제 | DELETE | `/api/v1/social/unlink` | 연결된 소셜 계정 해제 | M4 예정 |
+
+---
+
+## 4.1 M4 구현 기준
+
+| 기능 | 완료 기준 |
+|------|------|
+| 소셜 계정 연동 | 인증된 사용자에게 KAKAO/GOOGLE Identity를 추가하고 중복 연동을 방지한다 |
+| 소셜 계정 해제 | 연결된 소셜 Identity를 해제하되 마지막 로그인 수단은 제거하지 않는다 |
+
+공통 기준:
+
+- 하나의 providerUserId는 하나의 User에만 연결될 수 있다
+- provider 값은 `KAKAO`, `GOOGLE`만 허용한다
+- providerAccessToken 검증 실패 시 `INVALID_SOCIAL_TOKEN`을 반환한다
+- provider 이메일이 없거나 검증되지 않은 경우 Auth API의 자동 연결은 수행하지 않는다
+- Social API의 명시적 연동에서는 providerUserId 중복 여부와 현재 인증 사용자의 의사를 우선 검증한다
+- 명시적 연동에서는 provider email verified 여부를 필수 조건으로 두지 않는다
+- 소셜 계정 연동/해제 이력 저장은 확장 항목으로 둔다
 
 ---
 
@@ -75,12 +98,12 @@ Social API는 로그인 자체를 처리하지 않으며,
 
 ### 요청 예시
 
-ㅇㅇㅇjson
+```json
 {
-"provider": "KAKAO",
-"providerAccessToken": "kakao-access-token-value"
+  "provider": "KAKAO",
+  "providerAccessToken": "kakao-access-token-value"
 }
-ㅇㅇㅇ
+```
 
 ---
 
@@ -90,6 +113,7 @@ Social API는 로그인 자체를 처리하지 않으며,
 - provider 값 검증
 - 소셜 제공자 API를 호출하여 사용자 정보 조회
 - provider의 고유 사용자 식별자 확인
+- provider email과 verified 상태는 제공되는 경우 참고 정보로 확인
 - 이미 다른 사용자에게 연동된 계정인지 확인
 - 현재 사용자 계정에 소셜 계정 연동
 - 필요 시 연동 이력 저장
@@ -169,8 +193,6 @@ Social API는 로그인 자체를 처리하지 않으며,
     }
 }
 ```
-
----
 
 ### 5.2 소셜 계정 해제
 
@@ -290,7 +312,8 @@ Social API는 로그인 자체를 처리하지 않으며,
 
 ## 6. 고려 사항
 
-- 소셜 계정 연동 시 동일 이메일 자동 연결 여부를 정책으로 결정해야 한다
+- 동일 이메일 자동 연결은 Auth API의 소셜 로그인에서 provider verified email 기준으로 수행한다
+- 동일 이메일 계정이 없으면 사용자는 회원가입하거나 기존 ID로 로그인한 뒤 Social API로 명시적 연동을 진행한다
 - 소셜 계정 해제 시 일반 로그인 수단이 없는 경우 해제 제한이 필요하다
 - 소셜 계정 연동 및 해제는 운영 감사 로그 대상으로 확장할 수 있다
 - providerUserId, provider 값에 대한 unique 제약이 필요하다
